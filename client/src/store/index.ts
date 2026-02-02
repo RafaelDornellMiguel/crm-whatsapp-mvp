@@ -319,10 +319,27 @@ const initialSchedules: Schedule[] = [
   },
 ];
 
+const convertDateStringsToDate = (obj: any): any => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(convertDateStringsToDate);
+  
+  const converted: any = {};
+  for (const key in obj) {
+    const value = obj[key];
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      converted[key] = new Date(value);
+    } else if (typeof value === 'object') {
+      converted[key] = convertDateStringsToDate(value);
+    } else {
+      converted[key] = value;
+    }
+  }
+  return converted;
+};
+
 export const useCRMStore = create<CRMStore>()(
   persist(
     (set, get) => ({
-      // Initial state
       contacts: initialContacts,
       leads: initialLeads,
       messages: initialMessages,
@@ -334,235 +351,136 @@ export const useCRMStore = create<CRMStore>()(
       messageMetrics: [],
       selectedLeadId: null,
       selectedContactId: null,
-      currentUserRole: 'vendedor',
+      currentUserRole: 'vendedor' as const,
       currentVendedorId: 'v1',
 
-      // Contact methods
-      addContact: (contact) => {
-        set((state) => ({
-          contacts: [...state.contacts, contact],
-        }));
-      },
-      updateContact: (id, updates) => {
-        set((state) => ({
-          contacts: state.contacts.map((c) =>
-            c.id === id ? { ...c, ...updates } : c
-          ),
-        }));
-      },
-      getContact: (id) => {
-        return get().contacts.find((c) => c.id === id);
-      },
+      addContact: (contact: Contact) => set((state) => ({ contacts: [...state.contacts, contact] })),
+      updateContact: (id: string, updates: Partial<Contact>) => set((state) => ({
+        contacts: state.contacts.map((c) => c.id === id ? { ...c, ...updates } : c),
+      })),
+      getContact: (id: string) => get().contacts.find((c) => c.id === id),
 
-      // Lead methods
-      addLead: (lead) => {
-        set((state) => ({
-          leads: [...state.leads, lead],
-        }));
-      },
-      updateLeadStatus: (id, status) => {
-        set((state) => ({
-          leads: state.leads.map((l) =>
-            l.id === id ? { ...l, status, updatedAt: new Date() } : l
-          ),
-        }));
-      },
-      updateLeadVendedor: (id, vendedorId, phoneNumberId) => {
-        set((state) => ({
-          leads: state.leads.map((l) =>
-            l.id === id ? { ...l, vendedorId, phoneNumberId, updatedAt: new Date() } : l
-          ),
-        }));
-      },
-      getLeadsByStatus: (status) => {
-        return get().leads.filter((l) => l.status === status);
-      },
-      getLeadByContactId: (contactId) => {
-        return get().leads.find((l) => l.contactId === contactId);
-      },
-      getLeadsByVendedor: (vendedorId) => {
-        return get().leads.filter((l) => l.vendedorId === vendedorId);
-      },
+      addLead: (lead: Lead) => set((state) => ({ leads: [...state.leads, lead] })),
+      updateLeadStatus: (id: string, status: LeadStatus) => set((state) => ({
+        leads: state.leads.map((l) => l.id === id ? { ...l, status, updatedAt: new Date() } : l),
+      })),
+      updateLeadVendedor: (id: string, vendedorId: string, phoneNumberId: string) => set((state) => ({
+        leads: state.leads.map((l) => l.id === id ? { ...l, vendedorId, phoneNumberId, updatedAt: new Date() } : l),
+      })),
+      getLeadsByStatus: (status: LeadStatus) => get().leads.filter((l) => l.status === status),
+      getLeadByContactId: (contactId: string) => get().leads.find((l) => l.contactId === contactId),
+      getLeadsByVendedor: (vendedorId: string) => get().leads.filter((l) => l.vendedorId === vendedorId),
 
-      // Message methods
-      addMessage: (message) => {
-        set((state) => ({
-          messages: [...state.messages, message],
-        }));
-        // Atualizar métricas
+      addMessage: (message: Message) => {
+        set((state) => ({ messages: [...state.messages, message] }));
         if (message.vendedorId) {
           get().updateMessageMetrics(message.leadId, message.vendedorId, message.timestamp, message.sender);
         }
       },
-      getMessagesByLeadId: (leadId) => {
-        return get()
-          .messages.filter((m) => m.leadId === leadId)
-          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      },
-      getMessagesByVendedor: (vendedorId) => {
-        return get()
-          .messages.filter((m) => m.vendedorId === vendedorId)
-          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      },
-
-      // Product methods
-      addProduct: (product) => {
-        set((state) => ({
-          products: [...state.products, product],
-        }));
-      },
-      updateProductStock: (id, quantity) => {
-        set((state) => ({
-          products: state.products.map((p) =>
-            p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p
-          ),
-        }));
-      },
-      getProduct: (id) => {
-        return get().products.find((p) => p.id === id);
-      },
-
-      // Order methods
-      addOrder: (order) => {
-        set((state) => ({
-          orders: [...state.orders, order],
-        }));
-        order.items.forEach((item) => {
-          get().updateProductStock(item.productId, item.quantity);
+      getMessagesByLeadId: (leadId: string) => {
+        const messages = get().messages.filter((m) => m.leadId === leadId);
+        return messages.sort((a, b) => {
+          const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp as any).getTime();
+          const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp as any).getTime();
+          return timeA - timeB;
         });
       },
-      updateOrderStatus: (id, status) => {
-        set((state) => ({
-          orders: state.orders.map((o) =>
-            o.id === id ? { ...o, status, updatedAt: new Date() } : o
-          ),
-        }));
+      getMessagesByVendedor: (vendedorId: string) => {
+        const messages = get().messages.filter((m) => m.vendedorId === vendedorId);
+        return messages.sort((a, b) => {
+          const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp as any).getTime();
+          const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp as any).getTime();
+          return timeA - timeB;
+        });
       },
-      getOrdersByLeadId: (leadId) => {
-        return get().orders.filter((o) => o.leadId === leadId);
+
+      addProduct: (product: Product) => set((state) => ({ products: [...state.products, product] })),
+      updateProductStock: (id: string, quantity: number) => set((state) => ({
+        products: state.products.map((p) => p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p),
+      })),
+      getProduct: (id: string) => get().products.find((p) => p.id === id),
+
+      addOrder: (order: Order) => {
+        set((state) => ({ orders: [...state.orders, order] }));
+        order.items.forEach((item) => get().updateProductStock(item.productId, item.quantity));
       },
-      getOrdersByVendedor: (vendedorId) => {
+      updateOrderStatus: (id: string, status: OrderStatus) => set((state) => ({
+        orders: state.orders.map((o) => o.id === id ? { ...o, status, updatedAt: new Date() } : o),
+      })),
+      getOrdersByLeadId: (leadId: string) => get().orders.filter((o) => o.leadId === leadId),
+      getOrdersByVendedor: (vendedorId: string) => {
         const vendedorLeads = get().getLeadsByVendedor(vendedorId);
         return get().orders.filter((o) => vendedorLeads.some((l) => l.id === o.leadId));
       },
 
-      // Referral methods
-      addReferral: (referral) => {
-        set((state) => ({
-          referrals: [...state.referrals, referral],
-        }));
-      },
-      updateReferralStatus: (id, status) => {
-        set((state) => ({
-          referrals: state.referrals.map((r) =>
-            r.id === id ? { ...r, status, updatedAt: new Date() } : r
-          ),
-        }));
-      },
-      getReferralsByReferrerId: (referrerId) => {
-        return get().referrals.filter((r) => r.referrerId === referrerId);
-      },
+      addReferral: (referral: Referral) => set((state) => ({ referrals: [...state.referrals, referral] })),
+      updateReferralStatus: (id: string, status: ReferralStatus) => set((state) => ({
+        referrals: state.referrals.map((r) => r.id === id ? { ...r, status, updatedAt: new Date() } : r),
+      })),
+      getReferralsByReferrerId: (referrerId: string) => get().referrals.filter((r) => r.referrerId === referrerId),
 
-      // Phone Number methods
-      addPhoneNumber: (phone) => {
-        set((state) => ({
-          phoneNumbers: [...state.phoneNumbers, phone],
-        }));
-      },
-      updatePhoneNumber: (id, updates) => {
-        set((state) => ({
-          phoneNumbers: state.phoneNumbers.map((p) =>
-            p.id === id ? { ...p, ...updates } : p
-          ),
-        }));
-      },
-      getPhoneNumbersByVendedor: (vendedorId) => {
-        return get().phoneNumbers.filter((p) => p.vendedorId === vendedorId);
-      },
+      addPhoneNumber: (phone: PhoneNumber) => set((state) => ({ phoneNumbers: [...state.phoneNumbers, phone] })),
+      updatePhoneNumber: (id: string, updates: Partial<PhoneNumber>) => set((state) => ({
+        phoneNumbers: state.phoneNumbers.map((p) => p.id === id ? { ...p, ...updates } : p),
+      })),
+      getPhoneNumbersByVendedor: (vendedorId: string) => get().phoneNumbers.filter((p) => p.vendedorId === vendedorId),
 
-      // Schedule methods
-      addSchedule: (schedule) => {
-        set((state) => ({
-          schedules: [...state.schedules, schedule],
-        }));
-      },
-      updateSchedule: (id, updates) => {
-        set((state) => ({
-          schedules: state.schedules.map((s) =>
-            s.id === id ? { ...s, ...updates } : s
-          ),
-        }));
-      },
-      deleteSchedule: (id) => {
-        set((state) => ({
-          schedules: state.schedules.filter((s) => s.id !== id),
-        }));
-      },
+      addSchedule: (schedule: Schedule) => set((state) => ({ schedules: [...state.schedules, schedule] })),
+      updateSchedule: (id: string, updates: Partial<Schedule>) => set((state) => ({
+        schedules: state.schedules.map((s) => s.id === id ? { ...s, ...updates } : s),
+      })),
+      deleteSchedule: (id: string) => set((state) => ({ schedules: state.schedules.filter((s) => s.id !== id) })),
       getSchedules: () => {
-        return get().schedules.sort((a, b) => a.dataInicio.getTime() - b.dataInicio.getTime());
+        const schedules = get().schedules;
+        return schedules.sort((a, b) => {
+          const timeA = a.dataInicio instanceof Date ? a.dataInicio.getTime() : new Date(a.dataInicio as any).getTime();
+          const timeB = b.dataInicio instanceof Date ? b.dataInicio.getTime() : new Date(b.dataInicio as any).getTime();
+          return timeA - timeB;
+        });
       },
-      getSchedulesByVendedor: (vendedorId) => {
-        return get()
-          .schedules.filter((s) => s.participantes?.includes(vendedorId))
-          .sort((a, b) => a.dataInicio.getTime() - b.dataInicio.getTime());
-      },
-
-      // Metrics methods
-      updateMessageMetrics: (leadId, vendedorId, timestamp, sender) => {
-        set((state) => {
-          const existingMetric = state.messageMetrics.find(
-            (m) => m.leadId === leadId && m.vendedorId === vendedorId
-          );
-
-          if (existingMetric) {
-            const updatedMetrics = state.messageMetrics.map((m) => {
-              if (m.leadId === leadId && m.vendedorId === vendedorId) {
-                const totalMensagens = m.totalMensagens + 1;
-                const mensagensEnviadas = sender === 'user' ? m.mensagensEnviadas + 1 : m.mensagensEnviadas;
-                const mensagensRecebidas = sender === 'contact' ? m.mensagensRecebidas + 1 : m.mensagensRecebidas;
-
-                let tempoMedioResposta = m.tempoMedioResposta;
-                if (sender === 'user' && m.ultimaResposta) {
-                  const diffMs = timestamp.getTime() - m.ultimaResposta.getTime();
-                  const diffMinutos = Math.round(diffMs / (1000 * 60));
-                  tempoMedioResposta = Math.round(
-                    (m.tempoMedioResposta * (totalMensagens - 1) + diffMinutos) / totalMensagens
-                  );
-                }
-
-                return {
-                  ...m,
-                  totalMensagens,
-                  mensagensEnviadas,
-                  mensagensRecebidas,
-                  ultimaResposta: sender === 'user' ? timestamp : m.ultimaResposta,
-                  tempoMedioResposta,
-                };
-              }
-              return m;
-            });
-            return { messageMetrics: updatedMetrics };
-          } else {
-            return {
-              messageMetrics: [
-                ...state.messageMetrics,
-                {
-                  leadId,
-                  vendedorId,
-                  primeiraResposta: sender === 'user' ? timestamp : null,
-                  ultimaResposta: sender === 'user' ? timestamp : null,
-                  tempoMedioResposta: 0,
-                  totalMensagens: 1,
-                  mensagensEnviadas: sender === 'user' ? 1 : 0,
-                  mensagensRecebidas: sender === 'contact' ? 1 : 0,
-                },
-              ],
-            };
-          }
+      getSchedulesByVendedor: (vendedorId: string) => {
+        const schedules = get().schedules.filter((s) => s.participantes?.includes(vendedorId));
+        return schedules.sort((a, b) => {
+          const timeA = a.dataInicio instanceof Date ? a.dataInicio.getTime() : new Date(a.dataInicio as any).getTime();
+          const timeB = b.dataInicio instanceof Date ? b.dataInicio.getTime() : new Date(b.dataInicio as any).getTime();
+          return timeA - timeB;
         });
       },
 
-      getVendedorMetrics: (vendedorId) => {
+      updateMessageMetrics: (leadId: string, vendedorId: string, timestamp: Date, sender: 'user' | 'contact') => {
+        const safeTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
+        set((state) => {
+          const existingMetric = state.messageMetrics.find((m) => m.leadId === leadId && m.vendedorId === vendedorId);
+          if (existingMetric) {
+            return {
+              messageMetrics: state.messageMetrics.map((m) => {
+                if (m.leadId === leadId && m.vendedorId === vendedorId) {
+                  const totalMensagens = m.totalMensagens + 1;
+                  const mensagensEnviadas = sender === 'user' ? m.mensagensEnviadas + 1 : m.mensagensEnviadas;
+                  const mensagensRecebidas = sender === 'contact' ? m.mensagensRecebidas + 1 : m.mensagensRecebidas;
+                  let tempoMedioResposta = m.tempoMedioResposta;
+                  if (sender === 'user' && m.ultimaResposta) {
+                    const ultimaRespostaTime = m.ultimaResposta instanceof Date ? m.ultimaResposta.getTime() : new Date(m.ultimaResposta as any).getTime();
+                    const diffMs = safeTimestamp.getTime() - ultimaRespostaTime;
+                    const diffMinutos = Math.round(diffMs / (1000 * 60));
+                    tempoMedioResposta = Math.round((m.tempoMedioResposta * (totalMensagens - 1) + diffMinutos) / totalMensagens);
+                  }
+                  return { ...m, totalMensagens, mensagensEnviadas, mensagensRecebidas, ultimaResposta: sender === 'user' ? safeTimestamp : m.ultimaResposta, tempoMedioResposta };
+                }
+                return m;
+              }),
+            };
+          }
+          return {
+            messageMetrics: [...state.messageMetrics, {
+              leadId, vendedorId, primeiraResposta: sender === 'user' ? safeTimestamp : null, ultimaResposta: sender === 'user' ? safeTimestamp : null,
+              tempoMedioResposta: 0, totalMensagens: 1, mensagensEnviadas: sender === 'user' ? 1 : 0, mensagensRecebidas: sender === 'contact' ? 1 : 0,
+            }],
+          };
+        });
+      },
+
+      getVendedorMetrics: (vendedorId: string) => {
         const state = get();
         const vendedorLeads = state.leads.filter((l) => l.vendedorId === vendedorId);
         const vendedorOrders = state.getOrdersByVendedor(vendedorId);
@@ -570,63 +488,41 @@ export const useCRMStore = create<CRMStore>()(
         const phoneNumbers = state.getPhoneNumbersByVendedor(vendedorId);
         const phoneNumber = phoneNumbers[0]?.number || 'N/A';
         const vendedorName = phoneNumbers[0]?.vendedorName || 'Desconhecido';
-
         const leadsConvertidos = vendedorLeads.filter((l) => l.status === 'convertido').length;
         const taxaConversao = vendedorLeads.length > 0 ? (leadsConvertidos / vendedorLeads.length) * 100 : 0;
-
-        const vendaTotal = vendedorOrders
-          .filter((o) => o.status === 'finalizado')
-          .reduce((sum, o) => sum + o.totalAmount, 0);
-
+        const vendaTotal = vendedorOrders.filter((o) => o.status === 'finalizado').reduce((sum, o) => sum + o.totalAmount, 0);
         const vendedorMetrics = state.messageMetrics.filter((m) => m.vendedorId === vendedorId);
-        const tempoMedioRespostaTMR =
-          vendedorMetrics.length > 0
-            ? Math.round(vendedorMetrics.reduce((sum, m) => sum + m.tempoMedioResposta, 0) / vendedorMetrics.length)
-            : 0;
-
-        const ultimaAtividade = vendedorMessages.length > 0
-          ? vendedorMessages[vendedorMessages.length - 1].timestamp
-          : new Date();
-
-        return {
-          vendedorId,
-          vendedorName,
-          phoneNumber,
-          leadsAtribuidos: vendedorLeads.length,
-          leadsConvertidos,
-          taxaConversao,
-          tempoMedioRespostaTMR,
-          totalMensagens: vendedorMessages.length,
-          pedidosCriados: vendedorOrders.length,
-          vendaTotal,
-          ultimaAtividade,
-        };
+        const tempoMedioRespostaTMR = vendedorMetrics.length > 0 ? Math.round(vendedorMetrics.reduce((sum, m) => sum + m.tempoMedioResposta, 0) / vendedorMetrics.length) : 0;
+        const ultimaAtividade = vendedorMessages.length > 0 ? vendedorMessages[vendedorMessages.length - 1].timestamp : new Date();
+        return { vendedorId, vendedorName, phoneNumber, leadsAtribuidos: vendedorLeads.length, leadsConvertidos, taxaConversao, tempoMedioRespostaTMR, totalMensagens: vendedorMessages.length, pedidosCriados: vendedorOrders.length, vendaTotal, ultimaAtividade };
       },
 
       getAllVendedoresMetrics: () => {
         const state = get();
         const vendedorIds = new Set(state.leads.map((l) => l.vendedorId).filter(Boolean));
-        return Array.from(vendedorIds)
-          .map((vendedorId) => state.getVendedorMetrics(vendedorId as string))
-          .filter((m) => m !== null) as VendedorMetrics[];
+        return Array.from(vendedorIds).map((vendedorId) => state.getVendedorMetrics(vendedorId as string)).filter((m) => m !== null) as VendedorMetrics[];
       },
 
-      // UI methods
-      setSelectedLeadId: (id) => {
-        set({ selectedLeadId: id });
-      },
-      setSelectedContactId: (id) => {
-        set({ selectedContactId: id });
-      },
-      setCurrentUserRole: (role) => {
-        set({ currentUserRole: role });
-      },
-      setCurrentVendedorId: (id) => {
-        set({ currentVendedorId: id });
-      },
+      setSelectedLeadId: (id: string | null) => set({ selectedLeadId: id }),
+      setSelectedContactId: (id: string | null) => set({ selectedContactId: id }),
+      setCurrentUserRole: (role: 'vendedor' | 'gerente' | 'dono') => set({ currentUserRole: role }),
+      setCurrentVendedorId: (id: string | null) => set({ currentVendedorId: id }),
     }),
     {
       name: 'crm-store',
+      merge: (persistedState: any, currentState: any) => {
+        if (persistedState) {
+          persistedState.contacts = convertDateStringsToDate(persistedState.contacts);
+          persistedState.leads = convertDateStringsToDate(persistedState.leads);
+          persistedState.messages = convertDateStringsToDate(persistedState.messages);
+          persistedState.orders = convertDateStringsToDate(persistedState.orders);
+          persistedState.referrals = convertDateStringsToDate(persistedState.referrals);
+          persistedState.phoneNumbers = convertDateStringsToDate(persistedState.phoneNumbers);
+          persistedState.schedules = convertDateStringsToDate(persistedState.schedules);
+          persistedState.messageMetrics = convertDateStringsToDate(persistedState.messageMetrics);
+        }
+        return { ...currentState, ...persistedState };
+      },
     }
   )
 );
