@@ -18,6 +18,8 @@ import Orders from "./pages/Orders";
 import Inventory from "./pages/Inventory";
 import Referrals from "./pages/Referrals";
 import Dashboard from "./pages/Dashboard";
+import Schedule from "./pages/Schedule";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import NotFound from "./pages/NotFound";
 
 function Router() {
@@ -35,7 +37,9 @@ function Router() {
           <Route path="/orders" component={Orders} />
           <Route path="/inventory" component={Inventory} />
           <Route path="/referrals" component={Referrals} />
+          <Route path="/schedule" component={Schedule} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/manager" component={ManagerDashboard} />
           <Route path="/404" component={NotFound} />
           {/* Final fallback route */}
           <Route component={NotFound} />

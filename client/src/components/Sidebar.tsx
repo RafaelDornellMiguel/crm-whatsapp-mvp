@@ -15,6 +15,8 @@ import {
   TrendingUp,
   Gift,
   BarChart3,
+  Calendar,
+  Shield,
   Menu,
   X,
 } from 'lucide-react';
@@ -36,8 +38,10 @@ export function Sidebar() {
     { label: 'Leads', href: '/leads', icon: <Users className="w-5 h-5" /> },
     { label: 'Pedidos', href: '/orders', icon: <ShoppingCart className="w-5 h-5" /> },
     { label: 'Estoque', href: '/inventory', icon: <Package className="w-5 h-5" /> },
-    { label: 'Indicações', href: '/referrals', icon: <Gift className="w-5 h-5" /> },
+    { label: 'Indicacoes', href: '/referrals', icon: <Gift className="w-5 h-5" /> },
+    { label: 'Agendamentos', href: '/schedule', icon: <Calendar className="w-5 h-5" /> },
     { label: 'Dashboard', href: '/dashboard', icon: <BarChart3 className="w-5 h-5" /> },
+    { label: 'Gerenciamento', href: '/manager', icon: <Shield className="w-5 h-5" /> },
   ];
 
   const isActive = (href: string) => {
