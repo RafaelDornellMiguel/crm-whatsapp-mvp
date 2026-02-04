@@ -3,6 +3,8 @@
  * Design Philosophy: Minimalismo Corporativo
  */
 
+// Etiquetas personalizadas conforme solicitado
+export type LeadTag = 'orcamento' | 'venda_fechada' | 'amsterda' | 'royale';
 export type LeadStatus = 'novo' | 'atendimento' | 'convertido' | 'perdido';
 export type LeadOrigin = 'whatsapp' | 'indicacao';
 export type OrderStatus = 'aberto' | 'confirmado' | 'finalizado';
@@ -26,6 +28,7 @@ export interface Lead {
   referrerId?: string;
   vendedorId?: string;
   phoneNumberId?: string;
+  tags?: LeadTag[];
   createdAt: Date;
   updatedAt: Date;
   notes?: string;
@@ -39,15 +42,18 @@ export interface Message {
   timestamp: Date;
   phoneNumberId?: string;
   vendedorId?: string;
+  whatsappMessageId?: string;
 }
 
 export interface Product {
   id: string;
   name: string;
+  medida?: string;
   price: number;
   stock: number;
   sku: string;
   description?: string;
+  categoria?: string;
 }
 
 export interface OrderItem {
@@ -84,6 +90,8 @@ export interface PhoneNumber {
   vendedorName: string;
   ativo: boolean;
   createdAt: Date;
+  whatsappConnected?: boolean;
+  whatsappToken?: string;
 }
 
 export interface Schedule {
@@ -132,4 +140,21 @@ export interface DashboardMetrics {
   vendaPorIndicacao: number;
   clientesQueIndicam: Array<{ name: string; count: number }>;
   vendedoresMetrics?: VendedorMetrics[];
+}
+
+// WhatsApp API Types (Simulação)
+export interface WhatsAppConfig {
+  phoneNumberId: string;
+  accessToken: string;
+  webhookVerifyToken: string;
+  connected: boolean;
+}
+
+export interface WhatsAppMessage {
+  id: string;
+  from: string;
+  to: string;
+  type: 'text' | 'image' | 'document';
+  text?: { body: string };
+  timestamp: string;
 }

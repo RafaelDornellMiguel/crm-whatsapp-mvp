@@ -129,18 +129,7 @@ export default function ManagerDashboard() {
           )}
         </div>
 
-        {/* Futuras Melhorias */}
-        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-3">Possibilidades Futuras</h3>
-          <ul className="text-sm text-blue-800 space-y-2">
-            <li>• Gráficos de performance em tempo real</li>
-            <li>• Alertas automáticos para TMR alto</li>
-            <li>• Relatórios comparativos entre vendedores</li>
-            <li>• Previsão de metas com IA</li>
-            <li>• Integração com WhatsApp Business API</li>
-            <li>• Sistema de recompensas automático</li>
-          </ul>
-        </div>
+
       </div>
     </div>
   );

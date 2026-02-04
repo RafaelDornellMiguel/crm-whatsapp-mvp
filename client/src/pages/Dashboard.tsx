@@ -251,17 +251,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Future Features */}
-        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-3">Possibilidades Futuras</h3>
-          <ul className="text-sm text-blue-800 space-y-2">
-            <li>• Relatórios avançados com gráficos interativos</li>
-            <li>• Previsão de receita com IA</li>
-            <li>• Análise de comportamento de clientes</li>
-            <li>• Integração com ferramentas de BI</li>
-            <li>• Exportação de relatórios em PDF/Excel</li>
-          </ul>
-        </div>
+
       </div>
     </div>
   );

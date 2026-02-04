@@ -1,19 +1,17 @@
 /**
  * Inbox - Lista de conversas estilo WhatsApp
  * Design Philosophy: Minimalismo Corporativo
- * - Layout familiar ao WhatsApp
- * - Status visual claro
- * - Clique abre o chat
  */
 
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useCRMStore } from '@/store';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TagBadge } from '@/components/TagBadge';
 import { Search, MessageCircle } from 'lucide-react';
 
 export default function Inbox() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   
   const { contacts, leads, messages, setSelectedLeadId } = useCRMStore();
@@ -21,9 +19,14 @@ export default function Inbox() {
   // Criar lista de conversas com informações combinadas
   const conversations = contacts.map((contact) => {
     const lead = leads.find((l) => l.contactId === contact.id);
-    const lastMessage = messages
-      .filter((m) => m.leadId === lead?.id)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+    const leadMessages = messages.filter((m) => m.leadId === lead?.id);
+    const lastMessage = leadMessages.length > 0 
+      ? leadMessages.sort((a, b) => {
+          const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp as any).getTime();
+          const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp as any).getTime();
+          return timeB - timeA;
+        })[0]
+      : null;
 
     return {
       contact,
@@ -99,9 +102,19 @@ export default function Inbox() {
                         <StatusBadge status={conv.lead.status} size="sm" />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <p className="text-sm text-muted-foreground mb-1">
                       {conv.contact.phone}
                     </p>
+                    
+                    {/* Tags */}
+                    {conv.lead?.tags && conv.lead.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {conv.lead.tags.map((tag) => (
+                          <TagBadge key={tag} tag={tag} size="sm" />
+                        ))}
+                      </div>
+                    )}
+                    
                     <p className="text-sm text-muted-foreground truncate">
                       {conv.lastMessage
                         ? conv.lastMessage.content

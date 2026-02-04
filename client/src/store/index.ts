@@ -19,6 +19,7 @@ import type {
   LeadStatus,
   OrderStatus,
   ReferralStatus,
+  LeadTag,
 } from '@/types';
 
 interface CRMStore {
@@ -33,9 +34,11 @@ interface CRMStore {
   addLead: (lead: Lead) => void;
   updateLeadStatus: (id: string, status: LeadStatus) => void;
   updateLeadVendedor: (id: string, vendedorId: string, phoneNumberId: string) => void;
+  updateLeadTags: (id: string, tags: LeadTag[]) => void;
   getLeadsByStatus: (status: LeadStatus) => Lead[];
   getLeadByContactId: (contactId: string) => Lead | undefined;
   getLeadsByVendedor: (vendedorId: string) => Lead[];
+  getLeadsByTag: (tag: LeadTag) => Lead[];
 
   // Messages
   messages: Message[];
@@ -46,6 +49,7 @@ interface CRMStore {
   // Products
   products: Product[];
   addProduct: (product: Product) => void;
+  updateProduct: (id: string, product: Partial<Product>) => void;
   updateProductStock: (id: string, quantity: number) => void;
   getProduct: (id: string) => Product | undefined;
 
@@ -66,6 +70,7 @@ interface CRMStore {
   phoneNumbers: PhoneNumber[];
   addPhoneNumber: (phone: PhoneNumber) => void;
   updatePhoneNumber: (id: string, phone: Partial<PhoneNumber>) => void;
+  deletePhoneNumber: (id: string) => void;
   getPhoneNumbersByVendedor: (vendedorId: string) => PhoneNumber[];
 
   // Schedules
@@ -95,149 +100,50 @@ interface CRMStore {
 
 // Dados iniciais mockados
 const initialContacts: Contact[] = [
-  {
-    id: 'c1',
-    name: 'João Silva',
-    phone: '(11) 99999-1111',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'c2',
-    name: 'Maria Santos',
-    phone: '(11) 98888-2222',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'c3',
-    name: 'Pedro Oliveira',
-    phone: '(11) 97777-3333',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'c4',
-    name: 'Ana Costa',
-    phone: '(11) 96666-4444',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'c5',
-    name: 'Carlos Ferreira',
-    phone: '(11) 95555-5555',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-  },
+  { id: 'c1', name: 'João Silva', phone: '(11) 99999-1111', createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+  { id: 'c2', name: 'Maria Santos', phone: '(11) 98888-2222', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+  { id: 'c3', name: 'Pedro Oliveira', phone: '(11) 97777-3333', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+  { id: 'c4', name: 'Ana Costa', phone: '(11) 96666-4444', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+  { id: 'c5', name: 'Carlos Ferreira', phone: '(11) 95555-5555', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
 ];
 
 const initialLeads: Lead[] = [
-  {
-    id: 'l1',
-    contactId: 'c1',
-    status: 'convertido',
-    origin: 'whatsapp',
-    vendedorId: 'v1',
-    phoneNumberId: 'p1',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'l2',
-    contactId: 'c2',
-    status: 'atendimento',
-    origin: 'whatsapp',
-    vendedorId: 'v2',
-    phoneNumberId: 'p2',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'l3',
-    contactId: 'c3',
-    status: 'novo',
-    origin: 'indicacao',
-    referrerId: 'c1',
-    vendedorId: 'v1',
-    phoneNumberId: 'p1',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'l4',
-    contactId: 'c4',
-    status: 'novo',
-    origin: 'whatsapp',
-    vendedorId: 'v3',
-    phoneNumberId: 'p3',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'l5',
-    contactId: 'c5',
-    status: 'perdido',
-    origin: 'whatsapp',
-    vendedorId: 'v2',
-    phoneNumberId: 'p2',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  },
+  { id: 'l1', contactId: 'c1', status: 'convertido', origin: 'whatsapp', vendedorId: 'v1', phoneNumberId: 'pn1', tags: ['venda_fechada', 'royale'], createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+  { id: 'l2', contactId: 'c2', status: 'atendimento', origin: 'whatsapp', vendedorId: 'v2', phoneNumberId: 'pn2', tags: ['orcamento', 'amsterda'], createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), updatedAt: new Date() },
+  { id: 'l3', contactId: 'c3', status: 'novo', origin: 'indicacao', referrerId: 'c1', vendedorId: 'v1', phoneNumberId: 'pn1', tags: ['orcamento'], createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), updatedAt: new Date() },
+  { id: 'l4', contactId: 'c4', status: 'novo', origin: 'whatsapp', vendedorId: 'v3', phoneNumberId: 'pn3', tags: ['royale'], createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), updatedAt: new Date() },
+  { id: 'l5', contactId: 'c5', status: 'perdido', origin: 'whatsapp', vendedorId: 'v2', phoneNumberId: 'pn2', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), updatedAt: new Date() },
 ];
 
 const initialMessages: Message[] = [
-  { id: 'm1', leadId: 'l1', sender: 'contact', content: 'Olá, tudo bem?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), vendedorId: 'v1', phoneNumberId: 'p1' },
-  { id: 'm2', leadId: 'l1', sender: 'user', content: 'Oi João! Tudo certo! Como posso ajudar?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 60000), vendedorId: 'v1', phoneNumberId: 'p1' },
-  { id: 'm3', leadId: 'l1', sender: 'contact', content: 'Gostaria de saber mais sobre seus produtos', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 120000), vendedorId: 'v1', phoneNumberId: 'p1' },
-  { id: 'm4', leadId: 'l1', sender: 'user', content: 'Claro! Temos ótimas opções. Qual seu interesse?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 180000), vendedorId: 'v1', phoneNumberId: 'p1' },
-  
-  { id: 'm5', leadId: 'l2', sender: 'contact', content: 'Oi, preciso de um orçamento', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), vendedorId: 'v2', phoneNumberId: 'p2' },
-  { id: 'm6', leadId: 'l2', sender: 'user', content: 'Ótimo! Qual é o seu projeto?', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 120000), vendedorId: 'v2', phoneNumberId: 'p2' },
-  
-  { id: 'm7', leadId: 'l3', sender: 'contact', content: 'João me indicou vocês', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), vendedorId: 'v1', phoneNumberId: 'p1' },
-  { id: 'm8', leadId: 'l3', sender: 'user', content: 'Que legal! Bem-vindo! 🎉', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60000), vendedorId: 'v1', phoneNumberId: 'p1' },
+  { id: 'm1', leadId: 'l1', sender: 'contact', content: 'Olá, tudo bem?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), vendedorId: 'v1', phoneNumberId: 'pn1' },
+  { id: 'm2', leadId: 'l1', sender: 'user', content: 'Oi João! Tudo certo! Como posso ajudar?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 60000), vendedorId: 'v1', phoneNumberId: 'pn1' },
+  { id: 'm3', leadId: 'l1', sender: 'contact', content: 'Gostaria de saber mais sobre o Colchão Royale', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 120000), vendedorId: 'v1', phoneNumberId: 'pn1' },
+  { id: 'm4', leadId: 'l1', sender: 'user', content: 'Claro! Temos o Royale Casal (1.88x1.38) e Queen (1.98x1.58). Qual seu interesse?', timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 180000), vendedorId: 'v1', phoneNumberId: 'pn1' },
+  { id: 'm5', leadId: 'l2', sender: 'contact', content: 'Oi, preciso de um orçamento para Colchão Amsterdã', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), vendedorId: 'v2', phoneNumberId: 'pn2' },
+  { id: 'm6', leadId: 'l2', sender: 'user', content: 'Ótimo! Temos Amsterdã King (2.03x1.93) e Casal (1.88x1.38). Qual tamanho?', timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 120000), vendedorId: 'v2', phoneNumberId: 'pn2' },
+  { id: 'm7', leadId: 'l3', sender: 'contact', content: 'João me indicou vocês', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), vendedorId: 'v1', phoneNumberId: 'pn1' },
+  { id: 'm8', leadId: 'l3', sender: 'user', content: 'Que legal! Bem-vindo! 🎉', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60000), vendedorId: 'v1', phoneNumberId: 'pn1' },
 ];
 
+// Produtos reais do cliente
 const initialProducts: Product[] = [
-  {
-    id: 'p1',
-    name: 'Produto Premium A',
-    price: 299.90,
-    stock: 15,
-    sku: 'SKU-001',
-    description: 'Produto de alta qualidade',
-  },
-  {
-    id: 'p2',
-    name: 'Produto Standard B',
-    price: 149.90,
-    stock: 8,
-    sku: 'SKU-002',
-    description: 'Produto versátil e confiável',
-  },
-  {
-    id: 'p3',
-    name: 'Produto Economy C',
-    price: 79.90,
-    stock: 2,
-    sku: 'SKU-003',
-    description: 'Opção econômica',
-  },
-  {
-    id: 'p4',
-    name: 'Serviço Premium',
-    price: 499.90,
-    stock: 20,
-    sku: 'SKU-004',
-    description: 'Serviço completo com suporte',
-  },
+  { id: 'prod1', name: 'Colchão Royale Casal', medida: '1.88x1.38', price: 2499.90, stock: 10, sku: 'ROY-CAS', categoria: 'colchao', description: 'Colchão Royale medida casal' },
+  { id: 'prod2', name: 'Colchão Royale Queen', medida: '1.98x1.58', price: 2999.90, stock: 8, sku: 'ROY-QUE', categoria: 'colchao', description: 'Colchão Royale medida queen' },
+  { id: 'prod3', name: 'Colchão Amsterdã King', medida: '2.03x1.93', price: 3999.90, stock: 5, sku: 'AMS-KIN', categoria: 'colchao', description: 'Colchão Amsterdã medida king' },
+  { id: 'prod4', name: 'Colchão Amsterdã Casal', medida: '1.88x1.38', price: 2799.90, stock: 7, sku: 'AMS-CAS', categoria: 'colchao', description: 'Colchão Amsterdã medida casal' },
+  { id: 'prod5', name: 'Sofá Cama 2.30m', medida: '2.30m', price: 1899.90, stock: 4, sku: 'SOF-230', categoria: 'sofa', description: 'Sofá cama 2.30 metros' },
+  { id: 'prod6', name: 'Sofá Cama 2.90m', medida: '2.90m', price: 2299.90, stock: 3, sku: 'SOF-290', categoria: 'sofa', description: 'Sofá cama 2.90 metros' },
+  { id: 'prod7', name: 'Sofá Infinity 2.50m', medida: '2.50m', price: 3499.90, stock: 6, sku: 'INF-250', categoria: 'sofa', description: 'Sofá Infinity 2.50 metros' },
+  { id: 'prod8', name: 'Sofá Infinity 3.50m', medida: '3.50m', price: 4499.90, stock: 4, sku: 'INF-350', categoria: 'sofa', description: 'Sofá Infinity 3.50 metros' },
 ];
 
 const initialOrders: Order[] = [
   {
     id: 'o1',
     leadId: 'l1',
-    items: [
-      { productId: 'p1', quantity: 2, price: 299.90 },
-      { productId: 'p3', quantity: 1, price: 79.90 },
-    ],
-    totalAmount: 679.70,
+    items: [{ productId: 'prod2', quantity: 1, price: 2999.90 }],
+    totalAmount: 2999.90,
     status: 'finalizado',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -245,84 +151,25 @@ const initialOrders: Order[] = [
 ];
 
 const initialReferrals: Referral[] = [
-  {
-    id: 'ref1',
-    referrerId: 'c1',
-    referredContactId: 'c3',
-    referredLeadId: 'l3',
-    status: 'indicada',
-    channel: 'whatsapp',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  },
+  { id: 'ref1', referrerId: 'c1', referredContactId: 'c3', referredLeadId: 'l3', status: 'indicada', channel: 'whatsapp', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), updatedAt: new Date() },
 ];
 
+// Múltiplos números de WhatsApp
 const initialPhoneNumbers: PhoneNumber[] = [
-  {
-    id: 'p1',
-    number: '(11) 91111-1111',
-    vendedorId: 'v1',
-    vendedorName: 'Carlos Mendes',
-    ativo: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'p2',
-    number: '(11) 92222-2222',
-    vendedorId: 'v2',
-    vendedorName: 'Ana Silva',
-    ativo: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 'p3',
-    number: '(11) 93333-3333',
-    vendedorId: 'v3',
-    vendedorName: 'Bruno Santos',
-    ativo: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-  },
+  { id: 'pn1', number: '(11) 91111-1111', vendedorId: 'v1', vendedorName: 'Carlos Mendes', ativo: true, whatsappConnected: true, createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+  { id: 'pn2', number: '(11) 92222-2222', vendedorId: 'v2', vendedorName: 'Ana Silva', ativo: true, whatsappConnected: true, createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+  { id: 'pn3', number: '(11) 93333-3333', vendedorId: 'v3', vendedorName: 'Bruno Santos', ativo: true, whatsappConnected: false, createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
 ];
 
 const initialSchedules: Schedule[] = [
-  {
-    id: 'sch1',
-    titulo: 'Treinamento com Colaboradores',
-    descricao: 'Treinamento de novos produtos',
-    tipo: 'treinamento',
-    dataInicio: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    dataFim: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
-    local: 'Sala de Treinamento',
-    participantes: ['v1', 'v2', 'v3'],
-    createdAt: new Date(),
-  },
-  {
-    id: 'sch2',
-    titulo: 'Apresentação de Produto',
-    descricao: 'Apresentação do novo produto para clientes',
-    tipo: 'apresentacao',
-    dataInicio: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    dataFim: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000),
-    local: 'Auditório Principal',
-    participantes: ['v1', 'v2'],
-    createdAt: new Date(),
-  },
-  {
-    id: 'sch3',
-    titulo: 'Reunião com Gerência',
-    descricao: 'Reunião mensal de resultados',
-    tipo: 'reuniao',
-    dataInicio: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    dataFim: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000),
-    local: 'Sala de Reuniões',
-    createdAt: new Date(),
-  },
+  { id: 'sch1', titulo: 'Treinamento com Colaboradores', descricao: 'Treinamento de novos produtos', tipo: 'treinamento', dataInicio: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), dataFim: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), local: 'Sala de Treinamento', participantes: ['v1', 'v2', 'v3'], createdAt: new Date() },
+  { id: 'sch2', titulo: 'Apresentação de Produto', descricao: 'Apresentação do novo produto para clientes', tipo: 'apresentacao', dataInicio: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), dataFim: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000), local: 'Auditório Principal', participantes: ['v1', 'v2'], createdAt: new Date() },
+  { id: 'sch3', titulo: 'Reunião com Gerência', descricao: 'Reunião mensal de resultados', tipo: 'reuniao', dataInicio: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), dataFim: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000), local: 'Sala de Reuniões', createdAt: new Date() },
 ];
 
 const convertDateStringsToDate = (obj: any): any => {
   if (!obj || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(convertDateStringsToDate);
-  
   const converted: any = {};
   for (const key in obj) {
     const value = obj[key];
@@ -367,9 +214,13 @@ export const useCRMStore = create<CRMStore>()(
       updateLeadVendedor: (id: string, vendedorId: string, phoneNumberId: string) => set((state) => ({
         leads: state.leads.map((l) => l.id === id ? { ...l, vendedorId, phoneNumberId, updatedAt: new Date() } : l),
       })),
+      updateLeadTags: (id: string, tags: LeadTag[]) => set((state) => ({
+        leads: state.leads.map((l) => l.id === id ? { ...l, tags, updatedAt: new Date() } : l),
+      })),
       getLeadsByStatus: (status: LeadStatus) => get().leads.filter((l) => l.status === status),
       getLeadByContactId: (contactId: string) => get().leads.find((l) => l.contactId === contactId),
       getLeadsByVendedor: (vendedorId: string) => get().leads.filter((l) => l.vendedorId === vendedorId),
+      getLeadsByTag: (tag: LeadTag) => get().leads.filter((l) => l.tags?.includes(tag)),
 
       addMessage: (message: Message) => {
         set((state) => ({ messages: [...state.messages, message] }));
@@ -395,6 +246,9 @@ export const useCRMStore = create<CRMStore>()(
       },
 
       addProduct: (product: Product) => set((state) => ({ products: [...state.products, product] })),
+      updateProduct: (id: string, updates: Partial<Product>) => set((state) => ({
+        products: state.products.map((p) => p.id === id ? { ...p, ...updates } : p),
+      })),
       updateProductStock: (id: string, quantity: number) => set((state) => ({
         products: state.products.map((p) => p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p),
       })),
@@ -423,6 +277,7 @@ export const useCRMStore = create<CRMStore>()(
       updatePhoneNumber: (id: string, updates: Partial<PhoneNumber>) => set((state) => ({
         phoneNumbers: state.phoneNumbers.map((p) => p.id === id ? { ...p, ...updates } : p),
       })),
+      deletePhoneNumber: (id: string) => set((state) => ({ phoneNumbers: state.phoneNumbers.filter((p) => p.id !== id) })),
       getPhoneNumbersByVendedor: (vendedorId: string) => get().phoneNumbers.filter((p) => p.vendedorId === vendedorId),
 
       addSchedule: (schedule: Schedule) => set((state) => ({ schedules: [...state.schedules, schedule] })),
@@ -439,7 +294,7 @@ export const useCRMStore = create<CRMStore>()(
         });
       },
       getSchedulesByVendedor: (vendedorId: string) => {
-        const schedules = get().schedules.filter((s) => s.participantes?.includes(vendedorId));
+        const schedules = get().schedules.filter((s) => s.participantes?.includes(vendedorId) || s.vendedorId === vendedorId);
         return schedules.sort((a, b) => {
           const timeA = a.dataInicio instanceof Date ? a.dataInicio.getTime() : new Date(a.dataInicio as any).getTime();
           const timeB = b.dataInicio instanceof Date ? b.dataInicio.getTime() : new Date(b.dataInicio as any).getTime();

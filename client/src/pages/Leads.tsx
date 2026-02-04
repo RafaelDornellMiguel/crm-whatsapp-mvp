@@ -1,22 +1,24 @@
 /**
- * Leads - Funil de vendas
+ * Leads - Funil de vendas com etiquetas personalizadas
  * Design Philosophy: Minimalismo Corporativo
- * - Visualização por status
- * - Alteração de status via dropdown
- * - Informações de origem
  */
 
 import { useCRMStore } from '@/store';
-import { StatusBadge } from '@/components/StatusBadge';
-import { Gift, MessageCircle } from 'lucide-react';
+import { TagBadge, TagSelector } from '@/components/TagBadge';
+import { Gift, MessageCircle, Tag } from 'lucide-react';
 import { useLocation } from 'wouter';
-import type { LeadStatus } from '@/types';
+import type { LeadStatus, LeadTag } from '@/types';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const statuses: LeadStatus[] = ['novo', 'atendimento', 'convertido', 'perdido'];
 
 export default function Leads() {
   const [, setLocation] = useLocation();
-  const { leads, contacts, updateLeadStatus, setSelectedLeadId } = useCRMStore();
+  const { leads, contacts, updateLeadStatus, updateLeadTags, setSelectedLeadId } = useCRMStore();
+  const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<LeadTag[]>([]);
 
   const getLeadsByStatus = (status: LeadStatus) => {
     return leads.filter((l) => l.status === status);
@@ -29,6 +31,19 @@ export default function Leads() {
 
   const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
     updateLeadStatus(leadId, newStatus);
+  };
+
+  const openTagEditor = (leadId: string, currentTags: LeadTag[] = []) => {
+    setEditingLeadId(leadId);
+    setSelectedTags(currentTags);
+  };
+
+  const saveTagChanges = () => {
+    if (editingLeadId) {
+      updateLeadTags(editingLeadId, selectedTags);
+      setEditingLeadId(null);
+      setSelectedTags([]);
+    }
   };
 
   return (
@@ -90,13 +105,33 @@ export default function Leads() {
                                 {contact.phone}
                               </p>
                             </div>
-                            {lead.origin === 'indicacao' && (
-                              <div className="relative group">
-                                <Gift className="w-4 h-4 text-yellow-600" />
-                                <span className="absolute bottom-full left-0 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Indicação</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {lead.origin === 'indicacao' && (
+                                <div className="relative group">
+                                  <Gift className="w-4 h-4 text-yellow-600" />
+                                  <span className="absolute bottom-full left-0 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Indicação</span>
+                                </div>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTagEditor(lead.id, lead.tags);
+                                }}
+                                className="p-1 hover:bg-secondary rounded"
+                              >
+                                <Tag className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            </div>
                           </div>
+
+                          {/* Tags */}
+                          {lead.tags && lead.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {lead.tags.map((tag) => (
+                                <TagBadge key={tag} tag={tag} size="sm" />
+                              ))}
+                            </div>
+                          )}
 
                           {/* Status Selector */}
                           <div className="mb-3">
@@ -141,6 +176,24 @@ export default function Leads() {
           })}
         </div>
       </div>
+
+      {/* Tag Editor Dialog */}
+      <Dialog open={!!editingLeadId} onOpenChange={() => setEditingLeadId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Etiquetas</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <TagSelector selectedTags={selectedTags} onChange={setSelectedTags} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditingLeadId(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveTagChanges}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

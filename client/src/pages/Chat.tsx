@@ -1,34 +1,70 @@
 /**
- * Chat - Conversa detalhada com lead
+ * Chat - Conversa detalhada com lead integrada ao WhatsApp
  * Design Philosophy: Minimalismo Corporativo
- * - Histórico de mensagens
- * - Campo para digitar
- * - Ações como criar pedido
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useCRMStore } from '@/store';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TagBadge } from '@/components/TagBadge';
 import { ArrowLeft, Send, ShoppingCart, AlertCircle } from 'lucide-react';
 import type { Message } from '@/types';
 import { nanoid } from 'nanoid';
+import { sendWhatsAppMessage, fetchIncomingMessages } from '@/services/whatsappApi';
+import { toast } from 'sonner';
 
 export default function Chat() {
   const [, setLocation] = useLocation();
   const [messageText, setMessageText] = useState('');
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const {
     selectedLeadId,
     leads,
     contacts,
-    messages,
+    phoneNumbers,
     addMessage,
     getMessagesByLeadId,
     getContact,
     updateLeadStatus,
   } = useCRMStore();
+
+  // Polling para mensagens recebidas (simulado)
+  useEffect(() => {
+    if (!selectedLeadId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const incomingMessages = await fetchIncomingMessages();
+        const lead = leads.find((l) => l.id === selectedLeadId);
+        const contact = lead ? getContact(lead.contactId) : null;
+        
+        if (contact && lead) {
+          incomingMessages.forEach((whatsappMsg) => {
+            if (whatsappMsg.from === contact.phone || whatsappMsg.from.includes(contact.phone.replace(/\D/g, ''))) {
+              const newMessage: Message = {
+                id: nanoid(),
+                leadId: selectedLeadId,
+                sender: 'contact',
+                content: whatsappMsg.text?.body || '',
+                timestamp: new Date(whatsappMsg.timestamp),
+                phoneNumberId: lead.phoneNumberId,
+                vendedorId: lead.vendedorId,
+                whatsappMessageId: whatsappMsg.id,
+              };
+              addMessage(newMessage);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar mensagens:', error);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedLeadId, leads, contacts, addMessage, getContact]);
 
   if (!selectedLeadId) {
     return (
@@ -41,6 +77,7 @@ export default function Chat() {
   const lead = leads.find((l) => l.id === selectedLeadId);
   const contact = lead ? getContact(lead.contactId) : null;
   const chatMessages = getMessagesByLeadId(selectedLeadId);
+  const phoneNumber = lead?.phoneNumberId ? phoneNumbers.find((p) => p.id === lead.phoneNumberId) : null;
 
   if (!lead || !contact) {
     return (
@@ -50,43 +87,83 @@ export default function Chat() {
     );
   }
 
-  const handleSendMessage = () => {
-    if (!messageText.trim()) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || isSending) return;
 
-    const newMessage: Message = {
-      id: nanoid(),
-      leadId: selectedLeadId,
-      sender: 'user',
-      content: messageText,
-      timestamp: new Date(),
-    };
+    setIsSending(true);
 
-    addMessage(newMessage);
-    setMessageText('');
+    try {
+      // Enviar via API WhatsApp (simulado)
+      const result = await sendWhatsAppMessage(
+        phoneNumber?.number || '',
+        contact.phone,
+        messageText
+      );
 
-    // Mudar status para atendimento se for novo
-    if (lead.status === 'novo') {
-      updateLeadStatus(selectedLeadId, 'atendimento');
+      if (result.success) {
+        const newMessage: Message = {
+          id: nanoid(),
+          leadId: selectedLeadId,
+          sender: 'user',
+          content: messageText,
+          timestamp: new Date(),
+          phoneNumberId: lead.phoneNumberId,
+          vendedorId: lead.vendedorId,
+          whatsappMessageId: result.messageId,
+        };
+
+        addMessage(newMessage);
+        setMessageText('');
+        toast.success('Mensagem enviada via WhatsApp');
+
+        // Mudar status para atendimento se for novo
+        if (lead.status === 'novo') {
+          updateLeadStatus(selectedLeadId, 'atendimento');
+        }
+      } else {
+        toast.error(result.error || 'Erro ao enviar mensagem');
+      }
+    } catch (error) {
+      toast.error('Erro ao enviar mensagem via WhatsApp');
+      console.error(error);
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="p-4 md:p-6 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setLocation('/')}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{contact.name}</h1>
-            <p className="text-sm text-muted-foreground">{contact.phone}</p>
+      <div className="p-4 md:p-6 border-b border-border">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation('/')}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">{contact.name}</h1>
+              <p className="text-sm text-muted-foreground">{contact.phone}</p>
+              {phoneNumber && (
+                <p className="text-xs text-muted-foreground">
+                  Via: {phoneNumber.number} ({phoneNumber.vendedorName})
+                </p>
+              )}
+            </div>
           </div>
+          <StatusBadge status={lead.status} />
         </div>
-        <StatusBadge status={lead.status} />
+        
+        {/* Tags */}
+        {lead.tags && lead.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {lead.tags.map((tag) => (
+              <TagBadge key={tag} tag={tag} size="sm" />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -147,11 +224,12 @@ export default function Chat() {
               }
             }}
             placeholder="Digite uma mensagem..."
-            className="flex-1 px-4 py-2 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            disabled={isSending}
+            className="flex-1 px-4 py-2 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!messageText.trim()}
+            disabled={!messageText.trim() || isSending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
@@ -182,7 +260,7 @@ function OrderModal({ leadId, contactName, onClose }: OrderModalProps) {
     Array<{ productId: string; quantity: number }>
   >([]);
 
-  const { products, addOrder, getOrdersByLeadId } = useCRMStore();
+  const { products, addOrder } = useCRMStore();
 
   const handleAddProduct = (productId: string) => {
     const existing = selectedProducts.find((p) => p.productId === productId);
@@ -237,12 +315,13 @@ function OrderModal({ leadId, contactName, onClose }: OrderModalProps) {
       updatedAt: new Date(),
     });
 
+    toast.success('Pedido criado com sucesso!');
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-card rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-border">
           <h2 className="text-xl font-bold text-foreground">Criar Pedido</h2>
@@ -253,7 +332,7 @@ function OrderModal({ leadId, contactName, onClose }: OrderModalProps) {
         <div className="p-6 space-y-4">
           <div>
             <h3 className="font-semibold text-foreground mb-3">Produtos Disponíveis</h3>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {products.map((product) => {
                 const isSelected = selectedProducts.some(
                   (p) => p.productId === product.id
@@ -266,13 +345,16 @@ function OrderModal({ leadId, contactName, onClose }: OrderModalProps) {
                   <div key={product.id} className="border border-border rounded-lg p-3">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground text-sm">{product.name}</p>
+                        {product.medida && (
+                          <p className="text-xs text-muted-foreground">{product.medida}</p>
+                        )}
+                        <p className="text-sm text-primary font-semibold mt-1">
                           R$ {product.price.toFixed(2)}
                         </p>
                       </div>
                       <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
-                        {product.stock} em estoque
+                        {product.stock} un
                       </span>
                     </div>
 
@@ -298,7 +380,7 @@ function OrderModal({ leadId, contactName, onClose }: OrderModalProps) {
                               parseInt(e.target.value) || 0
                             )
                           }
-                          className="w-12 text-center bg-card border border-border rounded px-2 py-1"
+                          className="w-12 text-center bg-card border border-border rounded px-2 py-1 text-sm"
                           min="1"
                           max={product.stock}
                         />
