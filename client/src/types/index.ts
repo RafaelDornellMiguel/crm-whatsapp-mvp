@@ -72,6 +72,7 @@ export interface ScheduledMessage {
 export interface Product {
   id: string;
   name: string;
+  modelo?: string;
   medida?: string;
   price: number;
   stock: number;
@@ -92,6 +93,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  dataEntrega?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

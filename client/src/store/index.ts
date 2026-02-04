@@ -129,14 +129,14 @@ const initialMessages: Message[] = [
 
 // Produtos reais do cliente
 const initialProducts: Product[] = [
-  { id: 'prod1', name: 'Colchão Royale Casal', medida: '1.88x1.38', price: 2499.90, stock: 10, sku: 'ROY-CAS', categoria: 'colchao', description: 'Colchão Royale medida casal' },
-  { id: 'prod2', name: 'Colchão Royale Queen', medida: '1.98x1.58', price: 2999.90, stock: 8, sku: 'ROY-QUE', categoria: 'colchao', description: 'Colchão Royale medida queen' },
-  { id: 'prod3', name: 'Colchão Amsterdã King', medida: '2.03x1.93', price: 3999.90, stock: 5, sku: 'AMS-KIN', categoria: 'colchao', description: 'Colchão Amsterdã medida king' },
-  { id: 'prod4', name: 'Colchão Amsterdã Casal', medida: '1.88x1.38', price: 2799.90, stock: 7, sku: 'AMS-CAS', categoria: 'colchao', description: 'Colchão Amsterdã medida casal' },
-  { id: 'prod5', name: 'Sofá Cama 2.30m', medida: '2.30m', price: 1899.90, stock: 4, sku: 'SOF-230', categoria: 'sofa', description: 'Sofá cama 2.30 metros' },
-  { id: 'prod6', name: 'Sofá Cama 2.90m', medida: '2.90m', price: 2299.90, stock: 3, sku: 'SOF-290', categoria: 'sofa', description: 'Sofá cama 2.90 metros' },
-  { id: 'prod7', name: 'Sofá Infinity 2.50m', medida: '2.50m', price: 3499.90, stock: 6, sku: 'INF-250', categoria: 'sofa', description: 'Sofá Infinity 2.50 metros' },
-  { id: 'prod8', name: 'Sofá Infinity 3.50m', medida: '3.50m', price: 4499.90, stock: 4, sku: 'INF-350', categoria: 'sofa', description: 'Sofá Infinity 3.50 metros' },
+  { id: 'prod1', name: 'Colchão Royale Casal', modelo: 'Royale', medida: '1.88x1.38', price: 2499.90, stock: 10, sku: 'ROY-CAS', categoria: 'colchao', description: 'Colchão Royale medida casal' },
+  { id: 'prod2', name: 'Colchão Royale Queen', modelo: 'Royale', medida: '1.98x1.58', price: 2999.90, stock: 8, sku: 'ROY-QUE', categoria: 'colchao', description: 'Colchão Royale medida queen' },
+  { id: 'prod3', name: 'Colchão Amster dã King', modelo: 'Amster dã', medida: '2.03x1.93', price: 3999.90, stock: 5, sku: 'AMS-KIN', categoria: 'colchao', description: 'Colchão Amster dã medida king' },
+  { id: 'prod4', name: 'Colchão Amster dã Casal', modelo: 'Amster dã', medida: '1.88x1.38', price: 2799.90, stock: 7, sku: 'AMS-CAS', categoria: 'colchao', description: 'Colchão Amster dã medida casal' },
+  { id: 'prod5', name: 'Sofá Cama 2.30m', modelo: 'Sofá Cama', medida: '2.30m', price: 1899.90, stock: 4, sku: 'SOF-230', categoria: 'sofa', description: 'Sofá cama 2.30 metros' },
+  { id: 'prod6', name: 'Sofá Cama 2.90m', modelo: 'Sofá Cama', medida: '2.90m', price: 2299.90, stock: 3, sku: 'SOF-290', categoria: 'sofa', description: 'Sofá cama 2.90 metros' },
+  { id: 'prod7', name: 'Sofá Infinity 2.50m', modelo: 'Infinity', medida: '2.50m', price: 3499.90, stock: 6, sku: 'INF-250', categoria: 'sofa', description: 'Sofá Infinity 2.50 metros' },
+  { id: 'prod8', name: 'Sofá Infinity 3.50m', modelo: 'Infinity', medida: '3.50m', price: 4499.90, stock: 4, sku: 'INF-350', categoria: 'sofa', description: 'Sofá Infinity 3.50 metros' },
 ];
 
 const initialOrders: Order[] = [

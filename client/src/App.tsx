@@ -19,6 +19,7 @@ import QuickReplies from "./pages/QuickReplies";
 import ScheduledMessages from "./pages/ScheduledMessages";
 import Leads from "./pages/Leads";
 import Orders from "./pages/Orders";
+import Products from "./pages/Products";
 import Inventory from "./pages/Inventory";
 import Referrals from "./pages/Referrals";
 import Dashboard from "./pages/Dashboard";
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/scheduled-messages" component={ScheduledMessages} />
           <Route path="/leads" component={Leads} />
           <Route path="/orders" component={Orders} />
+          <Route path="/products" component={Products} />
           <Route path="/inventory" component={Inventory} />
           <Route path="/referrals" component={Referrals} />
           <Route path="/schedule" component={Schedule} />

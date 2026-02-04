@@ -82,7 +82,7 @@ export default function Dashboard() {
       <div className="p-4 md:p-6 border-b border-border">
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Visão geral do seu CRM e métricas em tempo real
+          Visão geral do GRUPO EVOLUTION e métricas em tempo real
         </p>
       </div>
 

@@ -5,7 +5,7 @@
 
 import { useCRMStore } from '@/store';
 import { TagBadge, TagSelector } from '@/components/TagBadge';
-import { Gift, MessageCircle, Tag } from 'lucide-react';
+import { Gift, MessageCircle, Tag, Send } from 'lucide-react';
 import { useLocation } from 'wouter';
 import type { LeadStatus, LeadTag } from '@/types';
 import { useState } from 'react';
@@ -19,6 +19,8 @@ export default function Leads() {
   const { leads, contacts, updateLeadStatus, updateLeadTags, setSelectedLeadId } = useCRMStore();
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<LeadTag[]>([]);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaignTag, setCampaignTag] = useState<LeadTag | null>(null);
 
   const getLeadsByStatus = (status: LeadStatus) => {
     return leads.filter((l) => l.status === status);
@@ -50,10 +52,21 @@ export default function Leads() {
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="p-4 md:p-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-foreground">Leads & Funil de Vendas</h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          Acompanhe a conversão de leads através do funil
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Leads & Funil de Vendas</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Acompanhe a conversão de leads através do funil
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCampaignModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+          >
+            <Send className="w-4 h-4" />
+            Campanha por Etiqueta
+          </button>
+        </div>
       </div>
 
       {/* Kanban View */}
@@ -194,6 +207,141 @@ export default function Leads() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Campaign Modal */}
+      {showCampaignModal && (
+        <CampaignModal
+          leads={leads}
+          contacts={contacts}
+          onClose={() => setShowCampaignModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+interface CampaignModalProps {
+  leads: any[];
+  contacts: any[];
+  onClose: () => void;
+}
+
+function CampaignModal({ leads, contacts, onClose }: CampaignModalProps) {
+  const [selectedTag, setSelectedTag] = useState<LeadTag | ''>('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const availableTags: { label: string; value: LeadTag }[] = [
+    { label: 'Orçamento', value: 'orcamento' },
+    { label: 'Venda Fechada', value: 'venda_fechada' },
+    { label: 'Amsterdã', value: 'amsterda' },
+    { label: 'Royale', value: 'royale' },
+  ];
+
+  const getLeadsByTag = (tag: LeadTag) => {
+    return leads.filter((lead) => lead.tags?.includes(tag));
+  };
+
+  const targetLeads = selectedTag ? getLeadsByTag(selectedTag) : [];
+
+  const handleSendCampaign = () => {
+    if (!selectedTag || !message.trim()) return;
+
+    setSending(true);
+
+    // Simular envio (não envia de verdade)
+    setTimeout(() => {
+      setSending(false);
+      const tagLabel = availableTags.find((t) => t.value === selectedTag)?.label || selectedTag;
+      alert(`✅ Mensagem enviada para ${targetLeads.length} cliente(s) com a etiqueta "${tagLabel}"!\n\nMensagem: ${message}`);
+      onClose();
+    }, 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-card rounded-lg shadow-lg max-w-lg w-full">
+        {/* Header */}
+        <div className="p-6 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground">Campanha por Etiqueta</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Envie uma mensagem em massa para clientes com uma etiqueta específica
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          {/* Select Tag */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Selecione a Etiqueta
+            </label>
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value as LeadTag)}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Escolha uma etiqueta...</option>
+              {availableTags.map((tag) => {
+                const count = getLeadsByTag(tag.value).length;
+                return (
+                  <option key={tag.value} value={tag.value}>
+                    {tag.label} ({count} cliente{count !== 1 ? 's' : ''})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Message */}
+          {selectedTag && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Mensagem
+                </label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Digite a mensagem que será enviada..."
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  rows={5}
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="bg-secondary p-4 rounded-lg">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  📊 Resumo da Campanha
+                </p>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>• Etiqueta: <strong>{availableTags.find((t) => t.value === selectedTag)?.label}</strong></p>
+                  <p>• Total de destinatários: <strong>{targetLeads.length}</strong></p>
+                  <p>• Caracteres: <strong>{message.length}</strong></p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="p-6 border-t border-border flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={sending}
+            className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors font-medium disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSendCampaign}
+            disabled={!selectedTag || !message.trim() || sending}
+            className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {sending ? 'Enviando...' : 'Enviar Campanha'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
