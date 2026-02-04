@@ -26,8 +26,8 @@ import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import NotFound from "./pages/NotFound";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
