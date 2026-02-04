@@ -19,8 +19,16 @@ import {
   Shield,
   Menu,
   X,
+  Phone,
+  UserCircle,
+  Zap,
+  Clock,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useCRMStore } from '@/store';
 
 interface NavItem {
   label: string;
@@ -33,12 +41,22 @@ export function Sidebar() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
+  const { theme, toggleTheme } = useTheme();
+  const { messages } = useCRMStore();
+
+  // Contar mensagens não lidas
+  const unreadCount = messages.filter((m) => m.sender === 'contact' && !m.read).length;
+
   const navItems: NavItem[] = [
-    { label: 'Inbox', href: '/', icon: <MessageCircle className="w-5 h-5" /> },
+    { label: 'Conversas', href: '/', icon: <MessageCircle className="w-5 h-5" />, badge: unreadCount > 0 ? unreadCount : undefined },
+    { label: 'Conexões', href: '/connections', icon: <Phone className="w-5 h-5" /> },
+    { label: 'Contatos', href: '/contacts', icon: <UserCircle className="w-5 h-5" /> },
+    { label: 'Respostas Rápidas', href: '/quick-replies', icon: <Zap className="w-5 h-5" /> },
+    { label: 'Mensagens Agendadas', href: '/scheduled-messages', icon: <Clock className="w-5 h-5" /> },
     { label: 'Leads', href: '/leads', icon: <Users className="w-5 h-5" /> },
     { label: 'Pedidos', href: '/orders', icon: <ShoppingCart className="w-5 h-5" /> },
     { label: 'Estoque', href: '/inventory', icon: <Package className="w-5 h-5" /> },
-    { label: 'Indicacoes', href: '/referrals', icon: <Gift className="w-5 h-5" /> },
+    { label: 'Indicações', href: '/referrals', icon: <Gift className="w-5 h-5" /> },
     { label: 'Agendamentos', href: '/schedule', icon: <Calendar className="w-5 h-5" /> },
     { label: 'Dashboard', href: '/dashboard', icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Gerenciamento', href: '/manager', icon: <Shield className="w-5 h-5" /> },
@@ -106,14 +124,13 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border">
-          <div className="text-xs text-sidebar-accent-foreground space-y-1">
-            <p className="font-medium">Possibilidades Futuras</p>
-            <ul className="space-y-1 text-sidebar-accent-foreground/70">
-              <li>• Automação de mensagens</li>
-              <li>• Chatbot IA</li>
-              <li>• Multiatendente</li>
-            </ul>
-          </div>
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <span>Modo {theme === 'dark' ? 'Claro' : 'Escuro'}</span>
+          </button>
         </div>
       </aside>
 

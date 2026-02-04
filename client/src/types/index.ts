@@ -11,6 +11,8 @@ export type OrderStatus = 'aberto' | 'confirmado' | 'finalizado';
 export type ReferralStatus = 'indicada' | 'contato' | 'convertida' | 'perdida' | 'recompensada';
 export type ScheduleType = 'reuniao' | 'treinamento' | 'apresentacao' | 'evento';
 export type UserRole = 'vendedor' | 'gerente' | 'dono';
+export type TicketStatus = 'aberto' | 'resolvido';
+export type MessageStatus = 'enviada' | 'entregue' | 'lida';
 
 export interface Contact {
   id: string;
@@ -24,6 +26,7 @@ export interface Lead {
   id: string;
   contactId: string;
   status: LeadStatus;
+  ticketStatus?: TicketStatus;
   origin: LeadOrigin;
   referrerId?: string;
   vendedorId?: string;
@@ -32,6 +35,7 @@ export interface Lead {
   createdAt: Date;
   updatedAt: Date;
   notes?: string;
+  unreadCount?: number;
 }
 
 export interface Message {
@@ -43,6 +47,26 @@ export interface Message {
   phoneNumberId?: string;
   vendedorId?: string;
   whatsappMessageId?: string;
+  status?: MessageStatus;
+  read?: boolean;
+}
+
+export interface QuickReply {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  atalho?: string;
+  createdAt: Date;
+}
+
+export interface ScheduledMessage {
+  id: string;
+  leadId: string;
+  contactId: string;
+  mensagem: string;
+  dataAgendada: Date;
+  enviada: boolean;
+  createdAt: Date;
 }
 
 export interface Product {

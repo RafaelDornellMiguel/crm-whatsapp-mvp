@@ -13,6 +13,10 @@ import { Sidebar } from "./components/Sidebar";
 // Pages
 import Inbox from "./pages/Inbox";
 import Chat from "./pages/Chat";
+import Connections from "./pages/Connections";
+import Contacts from "./pages/Contacts";
+import QuickReplies from "./pages/QuickReplies";
+import ScheduledMessages from "./pages/ScheduledMessages";
 import Leads from "./pages/Leads";
 import Orders from "./pages/Orders";
 import Inventory from "./pages/Inventory";
@@ -33,6 +37,10 @@ function Router() {
         <Switch>
           <Route path="/" component={Inbox} />
           <Route path="/chat" component={Chat} />
+          <Route path="/connections" component={Connections} />
+          <Route path="/contacts" component={Contacts} />
+          <Route path="/quick-replies" component={QuickReplies} />
+          <Route path="/scheduled-messages" component={ScheduledMessages} />
           <Route path="/leads" component={Leads} />
           <Route path="/orders" component={Orders} />
           <Route path="/inventory" component={Inventory} />
@@ -52,7 +60,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
           <Router />

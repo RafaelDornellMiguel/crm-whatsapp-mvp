@@ -32,6 +32,7 @@ interface CRMStore {
   // Leads
   leads: Lead[];
   addLead: (lead: Lead) => void;
+  updateLead: (id: string, updates: Partial<Lead>) => void;
   updateLeadStatus: (id: string, status: LeadStatus) => void;
   updateLeadVendedor: (id: string, vendedorId: string, phoneNumberId: string) => void;
   updateLeadTags: (id: string, tags: LeadTag[]) => void;
@@ -208,6 +209,9 @@ export const useCRMStore = create<CRMStore>()(
       getContact: (id: string) => get().contacts.find((c) => c.id === id),
 
       addLead: (lead: Lead) => set((state) => ({ leads: [...state.leads, lead] })),
+      updateLead: (id: string, updates: Partial<Lead>) => set((state) => ({
+        leads: state.leads.map((l) => l.id === id ? { ...l, ...updates, updatedAt: new Date() } : l),
+      })),
       updateLeadStatus: (id: string, status: LeadStatus) => set((state) => ({
         leads: state.leads.map((l) => l.id === id ? { ...l, status, updatedAt: new Date() } : l),
       })),
