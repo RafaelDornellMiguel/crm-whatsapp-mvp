@@ -25,6 +25,7 @@ import Referrals from "./pages/Referrals";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -49,10 +50,11 @@ function Router() {
           <Route path="/referrals" component={Referrals} />
           <Route path="/schedule" component={Schedule} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/manager" component={ManagerDashboard} />
-          <Route path="/404" component={NotFound} />
-          {/* Final fallback route */}
-          <Route component={NotFound} />
+      <Route path="/manager" component={ManagerDashboard} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/404" component={NotFound} />
+      {/* Final fallback route */}
+      <Route component={NotFound} />
         </Switch>
       </main>
     </div>

@@ -25,6 +25,7 @@ import {
   Clock,
   Moon,
   Sun,
+  Cog,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -61,6 +62,7 @@ export function Sidebar() {
     { label: 'Agendamentos', href: '/schedule', icon: <Calendar className="w-5 h-5" /> },
     { label: 'Dashboard', href: '/dashboard', icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Gerenciamento', href: '/manager', icon: <Shield className="w-5 h-5" /> },
+    { label: 'Configurações', href: '/settings', icon: <Cog className="w-5 h-5" /> },
   ];
 
   const isActive = (href: string) => {
