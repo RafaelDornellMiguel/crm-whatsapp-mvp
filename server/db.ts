@@ -109,3 +109,111 @@ export async function getUserByOpenId(openId: string) {
 }
 
 // TODO: add feature queries here as your schema grows.
+
+// ============================================
+// CONTATOS
+// ============================================
+
+import { contatos, InsertContato, mensagens, InsertMensagem } from "../drizzle/schema";
+import { desc } from "drizzle-orm";
+
+export async function getContatosByEmpresaId(tenantId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get contatos: database not available");
+    return [];
+  }
+
+  const result = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.tenantId, tenantId));
+
+  return result;
+}
+
+export async function getContatoByTelefone(telefone: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get contato: database not available");
+    return undefined;
+  }
+
+  const result = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.telefone, telefone))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createContato(data: InsertContato) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot create contato: database not available");
+  }
+
+  const result = await db.insert(contatos).values(data);
+  const insertId = Number(result[0].insertId);
+
+  // Buscar contato criado
+  const created = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.id, insertId))
+    .limit(1);
+
+  return created[0];
+}
+
+// ============================================
+// MENSAGENS
+// ============================================
+
+export async function getMensagensByContatoId(contatoId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get mensagens: database not available");
+    return [];
+  }
+
+  const result = await db
+    .select()
+    .from(mensagens)
+    .where(eq(mensagens.contatoId, contatoId))
+    .orderBy(mensagens.createdAt);
+
+  return result;
+}
+
+export async function createMensagem(data: InsertMensagem) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot create mensagem: database not available");
+  }
+
+  const result = await db.insert(mensagens).values(data);
+  const insertId = Number(result[0].insertId);
+
+  // Buscar mensagem criada
+  const created = await db
+    .select()
+    .from(mensagens)
+    .where(eq(mensagens.id, insertId))
+    .limit(1);
+
+  return created[0];
+}
+
+export async function markMensagensAsRead(contatoId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot mark mensagens as read: database not available");
+  }
+
+  await db
+    .update(mensagens)
+    .set({ lida: true })
+    .where(eq(mensagens.contatoId, contatoId));
+}
