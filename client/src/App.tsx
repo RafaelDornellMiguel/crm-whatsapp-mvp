@@ -20,7 +20,7 @@ import ScheduledMessages from "./pages/ScheduledMessages";
 import Leads from "./pages/Leads";
 import Orders from "./pages/Orders";
 import Products from "./pages/Products";
-import Inventory from "./pages/Inventory";
+import ProductsInventory from "./pages/ProductsInventory";
 import Referrals from "./pages/Referrals";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
@@ -46,7 +46,7 @@ function Router() {
           <Route path="/leads" component={Leads} />
           <Route path="/orders" component={Orders} />
           <Route path="/products" component={Products} />
-          <Route path="/inventory" component={Inventory} />
+          <Route path="/products-inventory" component={ProductsInventory} />
           <Route path="/referrals" component={Referrals} />
           <Route path="/schedule" component={Schedule} />
           <Route path="/dashboard" component={Dashboard} />
