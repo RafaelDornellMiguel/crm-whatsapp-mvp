@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, empresas, InsertEmpresa } from "../drizzle/schema";
+import { InsertUser, users, empresas, InsertEmpresa, contatos, InsertContato, mensagens, InsertMensagem } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { desc, eq } from "drizzle-orm";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -108,14 +108,9 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
-
 // ============================================
 // CONTATOS
 // ============================================
-
-import { contatos, InsertContato, mensagens, InsertMensagem } from "../drizzle/schema";
-import { desc } from "drizzle-orm";
 
 export async function getContatosByEmpresaId(tenantId: number) {
   const db = await getDb();
@@ -216,4 +211,133 @@ export async function markMensagensAsRead(contatoId: number) {
     .update(mensagens)
     .set({ lida: true })
     .where(eq(mensagens.contatoId, contatoId));
+}
+
+// ============================================
+// INBOX (Conversas Ativas)
+// ============================================
+
+export async function getInboxByTenantId(tenantId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get inbox: database not available");
+    return [];
+  }
+
+  // Buscar últimas conversas (contatos com mensagens não lidas ou recentes)
+  const result = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.tenantId, tenantId))
+    .orderBy(desc(contatos.updatedAt))
+    .limit(limit);
+
+  return result;
+}
+
+export async function getConversaWithMessages(contatoId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot get conversa: database not available");
+  }
+
+  // Buscar contato
+  const contatoResult = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.id, contatoId))
+    .limit(1);
+
+  if (contatoResult.length === 0) {
+    throw new Error("Contato não encontrado");
+  }
+
+  const contato = contatoResult[0];
+
+  // Buscar mensagens da conversa
+  const msgs = await db
+    .select()
+    .from(mensagens)
+    .where(eq(mensagens.contatoId, contatoId))
+    .orderBy(desc(mensagens.createdAt))
+    .limit(100);
+
+  return {
+    contato,
+    mensagens: msgs.reverse(), // Ordenar do mais antigo para o mais novo
+  };
+}
+
+// ============================================
+// LEADS (Contatos com Status)
+// ============================================
+
+export async function getLeadsByTenantId(tenantId: number, status?: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get leads: database not available");
+    return [];
+  }
+
+  const conditions = [eq(contatos.tenantId, tenantId)];
+  if (status) {
+    conditions.push(eq(contatos.status, status as any));
+  }
+
+  const result = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.tenantId, tenantId))
+    .orderBy(desc(contatos.createdAt));
+
+  return result;
+}
+
+export async function updateContatoStatus(contatoId: number, status: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot update contato: database not available");
+  }
+
+  await db
+    .update(contatos)
+    .set({ status: status as any, updatedAt: new Date() })
+    .where(eq(contatos.id, contatoId));
+}
+
+export async function getContatosUnreadCount(tenantId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get unread count: database not available");
+    return 0;
+  }
+
+  // Contar mensagens não lidas de contatos
+  const result = await db
+    .select()
+    .from(mensagens)
+    .where(eq(mensagens.lida, false));
+
+  return result.length;
+}
+
+// ============================================
+// BUSCA E FILTROS
+// ============================================
+
+export async function searchContatosByName(tenantId: number, nome: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot search contatos: database not available");
+    return [];
+  }
+
+  const result = await db
+    .select()
+    .from(contatos)
+    .where(eq(contatos.tenantId, tenantId))
+    .limit(20);
+
+  // Filtro em memória para busca por nome (case-insensitive)
+  return result.filter(c => c.nome.toLowerCase().includes(nome.toLowerCase()));
 }

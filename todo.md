@@ -20,10 +20,12 @@
 - [x] Testes vitest para polling (7 testes)
 
 ## Fase 3: Chat, Inbox e Leads Reais
-- [ ] Carregar conversas reais do banco PostgreSQL
-- [ ] Enviar/receber mensagens reais via Evolution API
-- [ ] Carregar leads reais do banco
-- [ ] Sincronizar contatos reais
+- [x] Carregar conversas reais do banco PostgreSQL
+- [x] Enviar/receber mensagens reais via Evolution API
+- [x] Carregar leads reais do banco
+- [x] Sincronizar contatos reais
+- [x] Procedures tRPC para Chat, Inbox e Leads
+- [x] Páginas React com UI moderna e responsiva
 
 ## Fase 4: Notificações em Tempo Real
 - [ ] WebSocket funcionando

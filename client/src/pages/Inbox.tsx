@@ -25,13 +25,10 @@ export default function Inbox() {
   const [filterType, setFilterType] = useState<FilterType>('todos');
 
   // Fetch conversations from database
-  const { data: conversations = [], isLoading, error } = trpc.messages.listConversations.useQuery(
-    undefined,
-    { enabled: !!user }
-  );
-
-  // Mark as read mutation
-  const markAsReadMutation = trpc.messages.markAsRead.useMutation();
+  const inboxQuery = trpc.chat.getInbox.useQuery({ limit: 50 });
+  const conversations = inboxQuery.data?.conversas || [];
+  const isLoading = inboxQuery.isLoading;
+  const error = inboxQuery.error;
 
   // Filter conversations
   const filteredConversations = conversations
@@ -58,8 +55,6 @@ export default function Inbox() {
     });
 
   const handleSelectConversation = (contatoId: number) => {
-    // Mark as read
-    markAsReadMutation.mutate({ contatoId });
     // Navigate to chat
     setLocation(`/chat?contatoId=${contatoId}`);
   };
@@ -88,9 +83,9 @@ export default function Inbox() {
     );
   }
 
-  const abertosCount = conversations.filter((c) => c.ticketStatus === 'aberto').length;
-  const resolvidosCount = conversations.filter((c) => c.ticketStatus === 'resolvido').length;
-  const emEsperaCount = 0; // TODO: Implementar contador de não lidas
+  const abertosCount = conversations.length;
+  const resolvidosCount = 0;
+  const emEsperaCount = inboxQuery.data?.unreadCount || 0;
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -223,7 +218,7 @@ export default function Inbox() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground truncate ml-13">
-                      Última mensagem aqui
+                      {new Date(conv.updatedAt).toLocaleString('pt-BR')}
                     </p>
                   </div>
 
@@ -236,9 +231,7 @@ export default function Inbox() {
                       {conv.ticketStatus === 'resolvido' ? 'Resolvido' : 'Aberto'}
                     </Badge>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(conv.updatedAt).toLocaleDateString('pt-BR', {
-                        month: 'short',
-                        day: 'numeric',
+                      {new Date(conv.updatedAt).toLocaleTimeString('pt-BR', {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}

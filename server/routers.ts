@@ -7,6 +7,7 @@ import { messagesRouter } from "./messagesRouter";
 import { syncRouter } from "./syncRouter";
 import { leadsRouter } from "./leadsRouter";
 import { ordersRouter } from "./ordersRouter";
+import { chatRouter } from "./chatRouter";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -27,6 +28,9 @@ export const appRouter = router({
 
   // Messages and conversations
   messages: messagesRouter,
+
+  // Chat, Inbox and Leads (real database)
+  chat: chatRouter,
 
   // Sync with Evolution API
   sync: syncRouter,
