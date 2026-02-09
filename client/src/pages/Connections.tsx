@@ -2,6 +2,7 @@
  * Connections - Gerenciar conexões WhatsApp via Evolution API REAL
  * Design Philosophy: Minimalismo Corporativo
  * Integração 100% real com Evolution API v2
+ * Polling automático a cada 5 segundos
  */
 
 import { useState, useEffect } from 'react';
@@ -24,6 +25,7 @@ export default function Connections() {
   const [newInstanceName, setNewInstanceName] = useState('');
   const [loading, setLoading] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
+  const [isPolling, setIsPolling] = useState(true);
 
   // Procedures tRPC
   const createInstanceMutation = trpc.whatsapp.createInstance.useMutation();
@@ -38,15 +40,32 @@ export default function Connections() {
     }
   }, [getInstancesQuery.data]);
 
+  // Polling automático a cada 5 segundos
+  useEffect(() => {
+    // Carregar instâncias imediatamente
+    loadInstances();
+
+    if (!isPolling) return;
+
+    // Configurar intervalo de polling
+    const pollInterval = setInterval(async () => {
+      try {
+        await getInstancesQuery.refetch();
+      } catch (error) {
+        console.error('Erro ao fazer polling:', error);
+      }
+    }, 5000); // 5 segundos
+
+    // Limpar intervalo ao desmontar
+    return () => clearInterval(pollInterval);
+  }, [isPolling]);
+
   const loadInstances = async () => {
     try {
-      setLoading(true);
       await getInstancesQuery.refetch();
     } catch (error: any) {
       console.error('Erro ao carregar instâncias:', error);
       toast.error('Erro ao carregar instâncias da Evolution API');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -137,20 +156,40 @@ export default function Connections() {
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="p-4 md:p-6 border-b border-border flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">Conexões WhatsApp</h1>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
             Gerenciar números WhatsApp conectados via Evolution API
+            {isPolling && (
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span className="text-xs font-medium text-green-600">Sincronizando...</span>
+              </span>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Conexão
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPolling(!isPolling)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+              isPolling
+                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={isPolling ? 'Clique para pausar sincronização' : 'Clique para retomar sincronização'}
+          >
+            <RefreshCw className={`w-4 h-4 ${isPolling ? 'animate-spin' : ''}`} />
+            {isPolling ? 'Ativo' : 'Pausado'}
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Conexão
+          </button>
+        </div>
       </div>
 
       {/* Content */}

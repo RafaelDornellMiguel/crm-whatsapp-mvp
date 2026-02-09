@@ -12,6 +12,13 @@
 - [x] Conectar/desconectar números WhatsApp reais
 - [x] Exibir status real de conexão
 
+## Fase 2.5: Polling Automático
+- [x] Implementar polling a cada 5 segundos
+- [x] Sincronizar status das instâncias em tempo real
+- [x] Botão para pausar/retomar sincronização
+- [x] Indicador visual de sincronização ativa
+- [x] Testes vitest para polling (7 testes)
+
 ## Fase 3: Chat, Inbox e Leads Reais
 - [ ] Carregar conversas reais do banco PostgreSQL
 - [ ] Enviar/receber mensagens reais via Evolution API
@@ -24,8 +31,11 @@
 - [ ] Atualizar inbox com novas conversas
 - [ ] Notificações visuais no frontend
 
-## Fase 5: QR Code e Testes
-- [ ] QR Code real gerando e conectando
+## Fase 5: Testes e Validação
+- [x] Testes de polling (7 testes)
+- [x] Testes de configuração de URL pública (4 testes)
+- [x] Testes de credenciais Evolution API (2 testes)
+- [x] Testes de whatsappRouter (11 testes)
 - [ ] Testar envio/recebimento de mensagens
 - [ ] Testar criação de leads e pedidos
 - [ ] Validar fluxo completo
