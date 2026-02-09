@@ -91,10 +91,13 @@
 - [x] emailAuthRouter com procedures tRPC
 
 ## Fase 11: Painel Admin de Departamentos
-- [ ] Gerenciar usuários por departamento
-- [ ] Configurar acessos por departamento
-- [ ] Visualizar permissões de cada usuário
-- [ ] Testes de gerenciamento de acessos
+- [x] Gerenciar usuários por departamento
+- [x] Configurar acessos por departamento
+- [x] Visualizar permissões de cada usuário
+- [x] Testes de gerenciamento de acessos
+- [x] CRUD de departamentos (criar, editar, deletar)
+- [x] Página de Gerenciamento de Departamentos
+- [x] Atrelar conexões WhatsApp a departamentos
 
 ## SISTEMA COMPLETO COM LOGIN E AUTENTICAÇÃO ✅
 - [x] Menu lateral responsivo e bonito
@@ -105,3 +108,31 @@
 - [x] WebSocket para notificações em tempo real
 - [x] Controle de acesso (admin only)
 - [x] Integração Evolution API 100% funcional
+
+## Fase 12: Autenticação ADM Automática
+- [ ] Detectar automaticamente se email é ADM
+- [ ] Liberar acesso ao Gerenciamento apenas para ADM
+- [ ] Validar role=admin no backend
+- [ ] Testar acesso restrito
+
+## Fase 13: Painel de Departamentos no Gerenciamento
+- [ ] CRUD de departamentos (criar, editar, excluir)
+- [ ] Apenas gestor pode gerenciar
+- [ ] Listar departamentos com usuários
+- [ ] Atrelar usuários a departamentos
+- [ ] Testes de gerenciamento
+
+## Fase 14: Atrelar Departamentos com Conexões WhatsApp
+- [ ] Adicionar campo departamento_id em conexões
+- [ ] Atrelar cada conexão a um departamento
+- [ ] Listar conexões por departamento
+- [ ] Validar permissão de acesso
+- [ ] Testes de atrelamento
+
+## Fase 15: Dashboard com Gráficos Reais
+- [ ] Gráfico de conversas por período
+- [ ] Gráfico de leads por status
+- [ ] Gráfico de performance de vendas
+- [ ] Filtrar por departamento
+- [ ] Dados 100% reais do banco
+- [ ] Testes de gráficos

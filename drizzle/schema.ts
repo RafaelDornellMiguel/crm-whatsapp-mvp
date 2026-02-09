@@ -24,7 +24,24 @@ export type Empresa = typeof empresas.$inferSelect;
 export type InsertEmpresa = typeof empresas.$inferInsert;
 
 // ============================================
-// USUÁRIOS (com setor)
+// DEPARTAMENTOS
+// ============================================
+export const departamentos = mysqlTable("departamentos", {
+  id: int("id").autoincrement().primaryKey(),
+  tenantId: int("tenantId").notNull(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  descricao: text("descricao"),
+  cor: varchar("cor", { length: 7 }).default("#3B82F6"),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Departamento = typeof departamentos.$inferSelect;
+export type InsertDepartamento = typeof departamentos.$inferInsert;
+
+// ============================================
+// USUÁRIOS (com setor e departamento)
 // ============================================
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -35,6 +52,7 @@ export const users = mysqlTable("users", {
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   setor: mysqlEnum("setor", ["vendas", "logistica", "financeiro", "admin"]).default("vendas").notNull(),
+  departamentoId: int("departamentoId"),
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -58,6 +76,7 @@ export const contatos = mysqlTable("contatos", {
   status: mysqlEnum("status", ["novo", "em_atendimento", "convertido", "perdido"]).default("novo").notNull(),
   ticketStatus: mysqlEnum("ticketStatus", ["aberto", "resolvido"]).default("aberto").notNull(),
   vendedorId: int("vendedorId"), // Usuário responsável
+  departamentoId: int("departamentoId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -121,6 +140,7 @@ export type InsertProduto = typeof produtos.$inferInsert;
 export const pedidos = mysqlTable("pedidos", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenantId").notNull(),
+  departamentoId: int("departamentoId"),
   contatoId: int("contatoId").notNull(),
   vendedorId: int("vendedorId").notNull(),
   valorTotal: decimal("valorTotal", { precision: 10, scale: 2 }).notNull(),
@@ -156,6 +176,7 @@ export type InsertItemPedido = typeof itensPedido.$inferInsert;
 export const mensagens = mysqlTable("mensagens", {
   id: int("id").autoincrement().primaryKey(),
   tenantId: int("tenantId").notNull(),
+  departamentoId: int("departamentoId"),
   contatoId: int("contatoId").notNull(),
   vendedorId: int("vendedorId"),
   remetente: mysqlEnum("remetente", ["usuario", "contato", "sistema"]).notNull(),
@@ -215,6 +236,7 @@ export const numerosWhatsapp = mysqlTable("numeros_whatsapp", {
   numero: varchar("numero", { length: 20 }).notNull(),
   nome: varchar("nome", { length: 100 }).notNull(),
   vendedorId: int("vendedorId"), // Usuário responsável
+  departamentoId: int("departamentoId"),
   status: mysqlEnum("status", ["conectado", "desconectado", "aguardando"]).default("aguardando").notNull(),
   qrCode: text("qrCode"),
   ativo: boolean("ativo").default(true).notNull(),
