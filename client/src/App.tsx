@@ -9,6 +9,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { Sidebar } from "./components/Sidebar";
+import { AdminGuard } from "./components/AdminGuard";
 
 // Pages
 import Inbox from "./pages/Inbox";
@@ -37,24 +38,36 @@ function Router() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <Switch>
-          <Route path="/" component={Inbox} />
-          <Route path="/chat" component={Chat} />
-          <Route path="/connections" component={Connections} />
+          <Route path="/">
+            <AdminGuard><Inbox /></AdminGuard>
+          </Route>
+          <Route path="/chat">
+            <AdminGuard><Chat /></AdminGuard>
+          </Route>
+          <Route path="/connections">
+            <AdminGuard><Connections /></AdminGuard>
+          </Route>
           <Route path="/contacts" component={Contacts} />
           <Route path="/quick-replies" component={QuickReplies} />
           <Route path="/scheduled-messages" component={ScheduledMessages} />
-          <Route path="/leads" component={Leads} />
+          <Route path="/leads">
+            <AdminGuard><Leads /></AdminGuard>
+          </Route>
           <Route path="/orders" component={Orders} />
           <Route path="/products" component={Products} />
           <Route path="/products-inventory" component={ProductsInventory} />
           <Route path="/referrals" component={Referrals} />
           <Route path="/schedule" component={Schedule} />
-          <Route path="/dashboard" component={Dashboard} />
-      <Route path="/manager" component={ManagerDashboard} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/404" component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+          <Route path="/dashboard">
+            <AdminGuard><Dashboard /></AdminGuard>
+          </Route>
+          <Route path="/manager">
+            <AdminGuard><ManagerDashboard /></AdminGuard>
+          </Route>
+          <Route path="/settings" component={Settings} />
+          <Route path="/404" component={NotFound} />
+          {/* Final fallback route */}
+          <Route component={NotFound} />
         </Switch>
       </main>
     </div>

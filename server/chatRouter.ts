@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { publicProcedure, router } from './_core/trpc';
+import { publicProcedure, router, adminProcedure, protectedProcedure } from './_core/trpc';
 import {
   getInboxByTenantId,
   getConversaWithMessages,
@@ -23,8 +23,9 @@ export const chatRouter = router({
 
   /**
    * Listar conversas do inbox (últimas conversas ativas)
+   * Apenas Gerentes e Donos (admin)
    */
-  getInbox: publicProcedure
+  getInbox: adminProcedure
     .input(z.object({
       limit: z.number().default(50),
     }))
@@ -52,8 +53,9 @@ export const chatRouter = router({
 
   /**
    * Obter conversa com histórico de mensagens
+   * Apenas Gerentes e Donos (admin)
    */
-  getConversa: publicProcedure
+  getConversa: adminProcedure
     .input(z.object({
       contatoId: z.number(),
     }))
@@ -81,8 +83,9 @@ export const chatRouter = router({
 
   /**
    * Enviar mensagem
+   * Apenas Gerentes e Donos (admin)
    */
-  sendMensagem: publicProcedure
+  sendMensagem: adminProcedure
     .input(z.object({
       contatoId: z.number(),
       conteudo: z.string().min(1),
@@ -122,8 +125,9 @@ export const chatRouter = router({
 
   /**
    * Listar leads com filtro opcional de status
+   * Apenas Gerentes e Donos (admin)
    */
-  getLeads: publicProcedure
+  getLeads: adminProcedure
     .input(z.object({
       status: z.enum(['novo', 'em_atendimento', 'convertido', 'perdido']).optional(),
     }))
@@ -162,8 +166,9 @@ export const chatRouter = router({
 
   /**
    * Atualizar status de um lead
+   * Apenas Gerentes e Donos (admin)
    */
-  updateLeadStatus: publicProcedure
+  updateLeadStatus: adminProcedure
     .input(z.object({
       contatoId: z.number(),
       status: z.enum(['novo', 'em_atendimento', 'convertido', 'perdido']),
@@ -188,8 +193,9 @@ export const chatRouter = router({
 
   /**
    * Buscar leads por nome
+   * Apenas Gerentes e Donos (admin)
    */
-  searchLeads: publicProcedure
+  searchLeads: adminProcedure
     .input(z.object({
       nome: z.string().min(1),
     }))
@@ -213,8 +219,9 @@ export const chatRouter = router({
 
   /**
    * Obter estatísticas de leads
+   * Apenas Gerentes e Donos (admin)
    */
-  getLeadStats: publicProcedure
+  getLeadStats: adminProcedure
     .query(async ({ ctx }) => {
       if (!ctx.user) {
         throw new Error('Usuário não autenticado');

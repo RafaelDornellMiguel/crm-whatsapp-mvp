@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, router, adminProcedure } from "./_core/trpc";
 import { getEvolutionApi } from "./evolutionApi";
 import { TRPCError } from "@trpc/server";
 
@@ -9,8 +9,9 @@ import { TRPCError } from "@trpc/server";
 export const whatsappRouter = router({
   /**
    * Criar nova instância do WhatsApp
+   * Apenas Gerentes e Donos (admin)
    */
-  createInstance: protectedProcedure
+  createInstance: adminProcedure
     .input(
       z.object({
         instanceName: z.string().min(1),
@@ -298,8 +299,9 @@ export const whatsappRouter = router({
 
   /**
    * Listar todas as instâncias
+   * Apenas Gerentes e Donos (admin)
    */
-  getInstances: protectedProcedure
+  getInstances: adminProcedure
     .query(async () => {
       try {
         const api = getEvolutionApi();
@@ -323,9 +325,10 @@ export const whatsappRouter = router({
     }),
 
   /**
-   * Obter QR Code de uma instância
+   * Gerar QR Code para conectar
+   * Apenas Gerentes e Donos (admin)
    */
-  getQRCode: protectedProcedure
+  getQRCode: adminProcedure
     .input(
       z.object({
         instanceName: z.string().min(1),
