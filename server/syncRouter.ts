@@ -4,12 +4,12 @@
  */
 
 import { z } from 'zod';
-import { router, protectedProcedure } from './_core/trpc';
+import { router, protectedProcedure, adminProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { getEvolutionApi } from './evolutionApi';
 import { getContatoByTelefone, createContato, getDb } from './db';
-import { contatos } from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { contatos, mensagens, numerosWhatsapp } from '../drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 export const syncRouter = router({
   /**
@@ -183,5 +183,118 @@ export const syncRouter = router({
           message: error.message || 'Erro ao obter status',
         });
       }
-    })
+    }),
+
+  /**
+   * Configurar webhook para uma instância
+   */
+  setupWebhook: adminProcedure
+    .input(
+      z.object({
+        instanceName: z.string(),
+        webhookUrl: z.string().url(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const evolutionApi = getEvolutionApi();
+
+        // Configurar webhook na Evolution API
+        await evolutionApi.setWebhook(input.instanceName, input.webhookUrl, [
+          'messages.upsert',
+          'messages.update',
+          'connection.update',
+          'presence.update',
+        ]);
+
+        console.log(`[Webhook] Configurado para ${input.instanceName}: ${input.webhookUrl}`);
+
+        return {
+          success: true,
+          message: 'Webhook configurado com sucesso',
+        };
+      } catch (error: any) {
+        console.error('[Webhook] Erro ao configurar:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Erro ao configurar webhook: ${error.message}`,
+        });
+      }
+    }),
+
+  /**
+   * Sincronizar status de todas as instâncias
+   */
+  syncAllStatus: adminProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.user.tenantId) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Usuário não possui empresa associada',
+      });
+    }
+
+    try {
+      const evolutionApi = getEvolutionApi();
+      const db = await getDb();
+
+      if (!db) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Banco de dados não disponível',
+        });
+      }
+
+      // Buscar todas as instâncias
+      const result = await evolutionApi.listInstances();
+      const instances = Array.isArray(result) ? result : result.instances || [];
+
+      console.log(`[Sync] Sincronizando ${instances.length} instâncias`);
+
+      let updatedCount = 0;
+
+      // Atualizar status de cada instância
+      for (const inst of instances) {
+        try {
+          const instanceName = inst.instanceName || inst.name;
+          const status = inst.status || 'close';
+
+          // Buscar número WhatsApp no banco
+          const existing = await db
+            .select()
+            .from(numerosWhatsapp)
+            .where(
+              and(
+                eq(numerosWhatsapp.tenantId, ctx.user.tenantId),
+                eq(numerosWhatsapp.nome, instanceName)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            await db
+              .update(numerosWhatsapp)
+              .set({
+                status: status === 'open' ? 'conectado' : 'desconectado',
+              })
+              .where(eq(numerosWhatsapp.id, existing[0].id));
+            updatedCount++;
+          }
+        } catch (error: any) {
+          console.error('[Sync] Erro ao atualizar status:', error.message);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Sincronizados ${updatedCount} status`,
+        updatedCount,
+      };
+    } catch (error: any) {
+      console.error('[Sync] Erro ao sincronizar status:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Erro ao sincronizar status: ${error.message}`,
+      });
+    }
+  }),
 });

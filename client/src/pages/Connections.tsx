@@ -1,8 +1,6 @@
 /**
  * Connections - Gerenciar conexões WhatsApp via Evolution API REAL
- * Design Philosophy: Minimalismo Corporativo
- * Integração 100% real com Evolution API v2
- * Polling automático a cada 5 segundos
+ * QR Code real, sincronização em tempo real, webhooks
  */
 
 import { useState, useEffect } from 'react';
@@ -30,8 +28,13 @@ export default function Connections() {
   // Procedures tRPC
   const createInstanceMutation = trpc.whatsapp.createInstance.useMutation();
   const getInstancesQuery = trpc.whatsapp.getInstances.useQuery();
+  const getQRCodeQuery = trpc.whatsapp.getQRCode.useQuery(
+    { instanceName: selectedInstance?.instanceName || '' },
+    { enabled: !!selectedInstance?.instanceName && showQRModal }
+  );
   const deleteInstanceMutation = trpc.whatsapp.deleteInstance.useMutation();
   const logoutInstanceMutation = trpc.whatsapp.logoutInstance.useMutation();
+  const syncContactsMutation = trpc.sync.syncContatos.useMutation();
 
   // Carregar instâncias ao montar e quando dados mudam
   useEffect(() => {
@@ -96,18 +99,33 @@ export default function Connections() {
     try {
       setQrLoading(true);
       setSelectedInstance(instance);
-      
-      // Placeholder: QR Code será obtido da Evolution API
-      setSelectedInstance({
-        ...instance,
-        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      });
       setShowQRModal(true);
+      
+      // Refetch QR Code quando modal abre
+      setTimeout(() => {
+        getQRCodeQuery.refetch();
+      }, 100);
     } catch (error: any) {
       console.error('Erro ao obter QR Code:', error);
       toast.error(error.message || 'Erro ao obter QR Code');
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleSyncContacts = async (instanceName: string) => {
+    try {
+      setLoading(true);
+      const result = await syncContactsMutation.mutateAsync({
+        instanceName,
+      });
+      toast.success(`${result.sincronizados} contatos sincronizados!`);
+      await loadInstances();
+    } catch (error: any) {
+      console.error('Erro ao sincronizar contatos:', error);
+      toast.error(error.message || 'Erro ao sincronizar contatos');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -251,30 +269,44 @@ export default function Connections() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  {instance.status === 'close' && (
+                  {instance.status !== 'open' && (
                     <button
                       onClick={() => handleShowQRCode(instance)}
                       disabled={qrLoading}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium disabled:opacity-50"
+                      title="Gerar QR Code para conectar"
                     >
                       <QrCode className="w-4 h-4" />
                       QR Code
                     </button>
                   )}
                   {instance.status === 'open' && (
-                    <button
-                      onClick={() => handleDisconnect(instance.instanceName)}
-                      disabled={loading}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      <Power className="w-4 h-4" />
-                      Desconectar
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleSyncContacts(instance.instanceName)}
+                        disabled={loading}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium disabled:opacity-50"
+                        title="Sincronizar contatos"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Sincronizar
+                      </button>
+                      <button
+                        onClick={() => handleDisconnect(instance.instanceName)}
+                        disabled={loading}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors text-sm font-medium disabled:opacity-50"
+                        title="Desconectar"
+                      >
+                        <Power className="w-4 h-4" />
+                        Desconectar
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => handleDelete(instance.instanceName)}
                     disabled={loading}
-                    className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    className="flex items-center justify-center px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                    title="Deletar"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -285,31 +317,36 @@ export default function Connections() {
         )}
       </div>
 
-      {/* Add Modal */}
+      {/* Add Instance Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-foreground mb-4">Nova Conexão</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 max-w-sm w-full mx-4 shadow-lg">
+            <h2 className="text-lg font-bold text-foreground mb-4">Nova Conexão</h2>
             <input
               type="text"
-              placeholder="Nome da instância (ex: vendedor-1)"
+              placeholder="Nome da instância (ex: Vendas, Suporte)"
               value={newInstanceName}
               onChange={(e) => setNewInstanceName(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground mb-4"
+              className="w-full px-3 py-2 border border-border rounded-lg mb-4 text-foreground bg-background"
+              disabled={loading}
             />
             <div className="flex gap-2">
               <button
-                onClick={() => setShowAddModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewInstanceName('');
+                }}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateInstance}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Criar'}
+                {loading ? 'Criando...' : 'Criar'}
               </button>
             </div>
           </div>
@@ -318,51 +355,60 @@ export default function Connections() {
 
       {/* QR Code Modal */}
       {showQRModal && selectedInstance && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-foreground mb-4">Escanear QR Code</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Abra WhatsApp no seu celular e escaneie o código abaixo para conectar:
-            </p>
-
-            {qrLoading ? (
-              <div className="flex items-center justify-center h-64 bg-muted rounded-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 max-w-sm w-full mx-4 shadow-lg text-center">
+            <h2 className="text-lg font-bold text-foreground mb-4">QR Code - {selectedInstance.instanceName}</h2>
+            
+            {getQRCodeQuery.isLoading ? (
+              <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
-            ) : selectedInstance.qrCode ? (
-              <div className="mb-4">
+            ) : getQRCodeQuery.data?.qrCode ? (
+              <>
                 <img
-                  src={selectedInstance.qrCode}
+                  src={getQRCodeQuery.data.qrCode}
                   alt="QR Code"
-                  className="w-full border border-border rounded-md"
+                  className="w-full max-w-xs mx-auto mb-4 border border-border rounded-lg"
                 />
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  QR Code expira em 30 segundos
+                <p className="text-sm text-muted-foreground mb-4">
+                  Escaneie este QR Code com seu WhatsApp para conectar
                 </p>
-              </div>
+                {getQRCodeQuery.data.code && (
+                  <div className="mb-4 p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2">Código:</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs break-all">{getQRCodeQuery.data.code}</code>
+                      <button
+                        onClick={() => copyToClipboard(getQRCodeQuery.data.code)}
+                        className="p-2 hover:bg-background rounded transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="flex items-center justify-center h-64 bg-muted rounded-md mb-4">
-                <p className="text-muted-foreground">QR Code não disponível</p>
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground mb-4">Erro ao carregar QR Code</p>
+                <button
+                  onClick={() => getQRCodeQuery.refetch()}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                >
+                  Tentar Novamente
+                </button>
               </div>
             )}
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowQRModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
-              >
-                Fechar
-              </button>
-              {selectedInstance.qrCode && (
-                <button
-                  onClick={() => copyToClipboard(selectedInstance.qrCode!)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                  Copiar
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => {
+                setShowQRModal(false);
+                setSelectedInstance(null);
+              }}
+              className="w-full mt-4 px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
