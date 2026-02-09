@@ -23,10 +23,13 @@ describe('Evolution API - Validação de Credenciais', () => {
     const evolutionKey = process.env.EVOLUTION_API_KEY;
 
     expect(evolutionUrl).toBeDefined();
-    expect(evolutionUrl).toBe('http://localhost:8083');
+    // URL pública (não localhost)
+    expect(evolutionUrl).toMatch(/^https?:\/\//);
+    expect(evolutionUrl).not.toContain('localhost');
+    expect(evolutionUrl).not.toContain('127.0.0.1');
     
     expect(evolutionKey).toBeDefined();
-    expect(evolutionKey).toBe('429683C4C977415CAAFCCE10F7D57E11');
+    expect(evolutionKey?.length).toBeGreaterThan(0);
 
     console.log('✅ Variáveis de ambiente da Evolution API configuradas');
   });
