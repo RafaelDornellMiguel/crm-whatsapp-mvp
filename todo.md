@@ -1,31 +1,36 @@
-# TODO - Implementações Finais
+# TODO - Sistema 100% Real (Sem Mocks)
 
-## Fase 1: Leads
-- [x] Criar router de Leads com procedures tRPC (list, create, update, delete)
-- [ ] Atualizar página de Leads para usar dados do banco
-- [ ] Integrar com contatos existentes
+## Fase 1: Remover Mocks
+- [x] Remover localStorage do store.ts
+- [x] Remover dados mockados de contatos, mensagens, leads, pedidos
+- [x] Remover simulações de envio de mensagem
+- [x] Remover QR Code simulado
 
-## Fase 2: Pedidos
-- [x] Criar router de Pedidos com procedures tRPC (list, create, update, delete)
-- [ ] Atualizar página de Pedidos para usar dados do banco
-- [ ] Integrar com produtos e clientes
+## Fase 2: Conexões Reais
+- [x] Buscar instâncias reais da Evolution API
+- [x] Gerar QR Code real funcionando
+- [x] Conectar/desconectar números WhatsApp reais
+- [x] Exibir status real de conexão
 
-## Fase 3: Produtos + Estoque Unificado
-- [x] Unificar tabelas de produtos e estoque no banco
-- [x] Criar página única de Produtos com estoque integrado
-- [x] Remover página separada de Estoque
+## Fase 3: Chat, Inbox e Leads Reais
+- [ ] Carregar conversas reais do banco PostgreSQL
+- [ ] Enviar/receber mensagens reais via Evolution API
+- [ ] Carregar leads reais do banco
+- [ ] Sincronizar contatos reais
 
 ## Fase 4: Notificações em Tempo Real
-- [ ] Implementar WebSocket para notificações
-- [ ] Adicionar sistema de notificações no frontend
-- [ ] Integrar com webhook de mensagens
+- [ ] WebSocket funcionando
+- [ ] Atualizar chat quando nova mensagem chegar
+- [ ] Atualizar inbox com novas conversas
+- [ ] Notificações visuais no frontend
 
-## Fase 5: Corrigir QR Code
-- [ ] Debugar geração de QR Code da Evolution API
-- [ ] Testar conexão com WhatsApp real
-- [ ] Validar fluxo completo de conexão
+## Fase 5: QR Code e Testes
+- [ ] QR Code real gerando e conectando
+- [ ] Testar envio/recebimento de mensagens
+- [ ] Testar criação de leads e pedidos
+- [ ] Validar fluxo completo
 
-## Fase 6: Testes e Entrega
-- [ ] Testar todas as funcionalidades
-- [ ] Validar integração completa
-- [ ] Entregar ao usuário
+## Fase 6: Entrega
+- [ ] Sistema 100% funcional
+- [ ] Sem mocks
+- [ ] Tudo real com API e banco

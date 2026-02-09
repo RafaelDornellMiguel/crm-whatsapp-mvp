@@ -231,6 +231,19 @@ export class EvolutionApiService {
   }
 
   /**
+   * Listar todas as instâncias
+   */
+  async listInstances(): Promise<any> {
+    try {
+      const response = await this.client.get('/instance/fetchInstances');
+      return response.data;
+    } catch (error: any) {
+      console.error('[Evolution API] Erro ao listar instâncias:', error.response?.data || error.message);
+      throw new Error(`Falha ao listar instâncias: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
    * Configurar webhook para receber mensagens
    */
   async setWebhook(instanceName: string, webhookUrl: string, events: string[] = ['messages.upsert']): Promise<any> {

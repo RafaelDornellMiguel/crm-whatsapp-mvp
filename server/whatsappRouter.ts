@@ -297,6 +297,58 @@ export const whatsappRouter = router({
     }),
 
   /**
+   * Listar todas as instâncias
+   */
+  getInstances: protectedProcedure
+    .query(async () => {
+      try {
+        const api = getEvolutionApi();
+        const result = await api.listInstances();
+
+        // Converter resposta para formato esperado
+        const instances = Array.isArray(result) ? result : result.instances || [];
+        return {
+          instances: instances.map((inst: any) => ({
+            instanceName: inst.instanceName || inst.name,
+            status: inst.status || 'close',
+            createdAt: inst.createdAt,
+          })),
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Erro ao listar instâncias",
+        });
+      }
+    }),
+
+  /**
+   * Obter QR Code de uma instância
+   */
+  getQRCode: protectedProcedure
+    .input(
+      z.object({
+        instanceName: z.string().min(1),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const api = getEvolutionApi();
+        const result = await api.connectInstance(input.instanceName);
+
+        return {
+          qrCode: result.base64,
+          code: result.code,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Erro ao obter QR Code",
+        });
+      }
+    }),
+
+  /**
    * Configurar webhook para receber mensagens
    */
   setWebhook: protectedProcedure
