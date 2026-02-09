@@ -10,8 +10,10 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { Sidebar } from "./components/Sidebar";
 import { AdminGuard } from "./components/AdminGuard";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Pages
+import Login from "./pages/Login";
 import Inbox from "./pages/Inbox";
 import Chat from "./pages/Chat";
 import Connections from "./pages/Connections";
@@ -28,8 +30,28 @@ import Schedule from "./pages/Schedule";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+
 function Router() {
-  // make sure to consider if you need authentication for certain routes
+  const { user, loading } = useAuth();
+
+  // Se ainda está carregando, mostra loading
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não está autenticado, mostra login
+  if (!user) {
+    return <Login />;
+  }
+
+  // Se está autenticado, mostra app com sidebar
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
