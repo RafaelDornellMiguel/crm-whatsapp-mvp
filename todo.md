@@ -142,3 +142,13 @@
 - [x] webhookRouter com procedures tRPC
 - [x] Sincronização automática de contatos
 - [x] Sincronização automática de status de conexão
+
+## Fase 17: Envio de Mensagens Real
+- [x] Adicionar métodos de envio no EvolutionApiService
+- [x] Criar procedures tRPC para enviar mensagens
+- [x] Envio de texto (sendMessage)
+- [x] Envio de mídia - imagem, vídeo, áudio, documento (sendMediaMessage)
+- [x] Tratamento de erros e feedback visual
+- [x] Testes de envio de mensagens (14 testes)
+- [x] Sincronização com banco de dados (PostgreSQL)
+- [x] Tudo 100% real com Evolution API

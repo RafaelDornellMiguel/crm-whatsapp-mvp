@@ -132,6 +132,80 @@ export const messagesRouter = router({
     }),
 
   /**
+   * Enviar mensagem com mídia (imagem, vídeo, áudio, documento)
+   */
+  sendMediaMessage: protectedProcedure
+    .input(
+      z.object({
+        contatoId: z.number(),
+        mediaUrl: z.string().url(),
+        caption: z.string().optional(),
+        mediaType: z.enum(['image', 'video', 'audio', 'document']),
+        instanceName: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user.tenantId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuário não possui empresa associada',
+        });
+      }
+
+      try {
+        // Buscar contato para obter telefone
+        const contato = await getContatoByTelefone(input.contatoId.toString());
+        
+        if (!contato) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Contato não encontrado',
+          });
+        }
+
+        // Enviar mensagem com mídia via Evolution API
+        const evolutionApi = getEvolutionApi();
+        const result = await evolutionApi.sendMediaMessage(input.instanceName, {
+          number: contato.telefone,
+          mediaUrl: input.mediaUrl,
+          caption: input.caption,
+          mediaType: input.mediaType,
+        });
+
+        // Salvar mensagem no banco de dados
+        const tipoMap: Record<string, 'imagem' | 'audio' | 'arquivo'> = {
+          'image': 'imagem',
+          'video': 'imagem', // Vídeo é salvo como imagem no banco
+          'audio': 'audio',
+          'document': 'arquivo',
+        };
+
+        const mensagem = await createMensagem({
+          tenantId: ctx.user.tenantId,
+          contatoId: input.contatoId,
+          vendedorId: ctx.user.id,
+          remetente: 'usuario',
+          conteudo: input.caption || `[${input.mediaType.toUpperCase()}]`,
+          tipo: tipoMap[input.mediaType] as 'texto' | 'audio' | 'sistema' | 'imagem' | 'arquivo' | undefined,
+          arquivoUrl: input.mediaUrl,
+          lida: true,
+        });
+
+        return {
+          success: true,
+          mensagem,
+          evolutionResponse: result,
+        };
+      } catch (error: any) {
+        console.error('Erro ao enviar mensagem com mídia:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'Erro ao enviar mensagem com mídia',
+        });
+      }
+    }),
+
+  /**
    * Marcar mensagens como lidas
    */
   markAsRead: protectedProcedure
