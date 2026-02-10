@@ -152,3 +152,16 @@
 - [x] Testes de envio de mensagens (14 testes)
 - [x] Sincronização com banco de dados (PostgreSQL)
 - [x] Tudo 100% real com Evolution API
+
+## Fase 18: Interface de Envio no Chat
+- [x] Refatorar página Chat com histórico de mensagens
+- [x] Campo de texto para digitar mensagens
+- [x] Botão de enviar com ícone
+- [x] Botão de anexar mídia
+- [x] Indicador de digitação (3 pontinhos animados)
+- [x] Feedback visual (enviado ✓, entregue ✓✓, lido)
+- [x] Upload de imagem, vídeo, áudio, documento
+- [x] Preview de mídia antes de enviar
+- [x] Auto scroll para última mensagem
+- [x] Design moderno e responsivo
+- [x] Integração com Evolution API real
