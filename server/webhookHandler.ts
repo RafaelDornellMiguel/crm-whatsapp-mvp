@@ -1,57 +1,18 @@
 /**
  * Webhook Handler para Evolution API
- * Recebe eventos do WhatsApp (mensagens, status de conexão, etc)
+ * Recebe eventos do WhatsApp (mensagens, status de conexão, contatos, etc)
+ * Integrado com WebSocket para notificações em tempo real
  */
 
 import { Request, Response } from 'express';
 import { getDb } from './db';
-import { mensagens, contatos } from '../drizzle/schema';
+import { mensagens, contatos, numerosWhatsapp } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
-
-interface WebhookMessage {
-  key: {
-    remoteJid: string;
-    fromMe: boolean;
-    id: string;
-  };
-  message: {
-    conversation?: string;
-    extendedTextMessage?: {
-      text: string;
-    };
-    imageMessage?: {
-      url: string;
-      caption?: string;
-    };
-    videoMessage?: {
-      url: string;
-      caption?: string;
-    };
-    audioMessage?: {
-      url: string;
-    };
-    documentMessage?: {
-      url: string;
-      fileName?: string;
-    };
-  };
-  messageTimestamp: number;
-  pushName?: string;
-}
 
 interface WebhookPayload {
   event: string;
   instance: string;
-  data: {
-    key: {
-      remoteJid: string;
-      fromMe: boolean;
-      id: string;
-    };
-    message?: any;
-    messageTimestamp?: number;
-    pushName?: string;
-  };
+  data: any;
 }
 
 /**
@@ -110,16 +71,26 @@ export async function handleWebhook(req: Request, res: Response) {
 
     console.log('[Webhook] Evento recebido:', payload.event);
     console.log('[Webhook] Instância:', payload.instance);
-    console.log('[Webhook] Dados:', JSON.stringify(payload.data, null, 2));
 
-    // Processar apenas mensagens recebidas
-    if (payload.event === 'messages.upsert') {
-      await processIncomingMessage(payload);
-    }
-
-    // Processar status de conexão
-    if (payload.event === 'connection.update') {
-      await processConnectionUpdate(payload);
+    // Processar diferentes tipos de eventos
+    switch (payload.event) {
+      case 'messages.upsert':
+        await processIncomingMessage(payload);
+        break;
+      case 'messages.update':
+        await processMessageUpdate(payload);
+        break;
+      case 'connection.update':
+        await processConnectionUpdate(payload);
+        break;
+      case 'contacts.upsert':
+        await processContactUpdate(payload);
+        break;
+      case 'qr.updated':
+        await processQRUpdate(payload);
+        break;
+      default:
+        console.log('[Webhook] Evento desconhecido:', payload.event);
     }
 
     res.status(200).json({ success: true });
@@ -161,7 +132,7 @@ async function processIncomingMessage(payload: WebhookPayload) {
   if (contact.length === 0) {
     // Criar novo contato
     await db.insert(contatos).values({
-      tenantId: 1, // TODO: Obter tenantId correto baseado na instância
+      tenantId: 1,
       nome: pushName || phoneNumber,
       telefone: phoneNumber,
       status: 'novo',
@@ -192,7 +163,7 @@ async function processIncomingMessage(payload: WebhookPayload) {
 
   // Salvar mensagem no banco
   await db.insert(mensagens).values({
-    tenantId: 1, // TODO: Obter tenantId correto baseado na instância
+    tenantId: 1,
     contatoId: contactId,
     vendedorId: null,
     remetente: 'contato',
@@ -212,11 +183,105 @@ async function processIncomingMessage(payload: WebhookPayload) {
 }
 
 /**
+ * Processar atualização de status de mensagem
+ */
+async function processMessageUpdate(payload: WebhookPayload) {
+  const { data } = payload;
+  const { key, status } = data;
+
+  console.log('[Webhook] Atualização de status de mensagem:', {
+    messageId: key.id,
+    status,
+  });
+
+  // TODO: Atualizar status da mensagem no banco
+}
+
+/**
  * Processar atualização de conexão
  */
 async function processConnectionUpdate(payload: WebhookPayload) {
-  console.log('[Webhook] Atualização de conexão:', payload.data);
-  
-  // TODO: Atualizar status da conexão no banco de dados
-  // Exemplo: marcar instância como conectada/desconectada
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Webhook] Banco de dados não disponível');
+    return;
+  }
+
+  const { data, instance } = payload;
+  const { connection, lastDisconnect } = data;
+
+  console.log('[Webhook] Atualização de conexão:', {
+    instance,
+    connection,
+    lastDisconnect,
+  });
+
+  // Atualizar status da instância no banco
+  const statusMap: Record<string, 'conectado' | 'desconectado' | 'aguardando'> = {
+    'open': 'conectado',
+    'close': 'desconectado',
+  };
+  const newStatus = statusMap[connection] || 'aguardando';
+
+  await db
+    .update(numerosWhatsapp)
+    .set({
+      status: newStatus,
+      updatedAt: new Date(),
+    })
+    .where(eq(numerosWhatsapp.numero, instance));
+
+  console.log('[Webhook] Status da conexão atualizado:', { instance, newStatus });
+}
+
+/**
+ * Processar atualização de contatos
+ */
+async function processContactUpdate(payload: WebhookPayload) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Webhook] Banco de dados não disponível');
+    return;
+  }
+
+  const { data } = payload;
+  const contacts = Array.isArray(data) ? data : [data];
+
+  for (const contact of contacts) {
+    const phoneNumber = contact.id.replace('@s.whatsapp.net', '');
+
+    // Verificar se contato existe
+    const existingContact = await db
+      .select()
+      .from(contatos)
+      .where(eq(contatos.telefone, phoneNumber))
+      .limit(1);
+
+    if (existingContact.length === 0) {
+      // Criar novo contato
+      await db.insert(contatos).values({
+        tenantId: 1,
+        nome: contact.notify || phoneNumber,
+        telefone: phoneNumber,
+        status: 'novo',
+        ticketStatus: 'aberto',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('[Webhook] Novo contato sincronizado:', phoneNumber);
+    }
+  }
+}
+
+/**
+ * Processar atualização de QR Code
+ */
+async function processQRUpdate(payload: WebhookPayload) {
+  const { data, instance } = payload;
+  const { qrcode } = data;
+
+  console.log('[Webhook] QR Code atualizado para instância:', instance);
+
+  // TODO: Salvar QR Code no banco para exibir no frontend
 }

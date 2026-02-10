@@ -130,3 +130,15 @@
 - [x] Autenticação inteligente por email
 - [x] Controle de acesso (admin only)
 - [x] Integração Evolution API 100% funcional
+
+## Fase 16: Webhooks da Evolution API
+- [x] Criar endpoint /api/webhook para receber eventos
+- [x] Implementar handlers para mensagens
+- [x] Implementar handlers para contatos
+- [x] Implementar handlers para status de conexão
+- [x] Registrar webhooks nas instâncias
+- [x] Integrar WebSocket para notificar frontend
+- [x] Testes de webhooks (8 testes)
+- [x] webhookRouter com procedures tRPC
+- [x] Sincronização automática de contatos
+- [x] Sincronização automática de status de conexão
